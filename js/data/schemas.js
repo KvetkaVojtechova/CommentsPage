@@ -3,7 +3,14 @@
  * contains only the known fields, so keys like __proto__ can never reach the app, or null.
  */
 import { SESSION } from '../config.js';
-import { isIsoDate, isUuid, toUsernameKey, validateUsername } from '../utils/validators.js';
+import {
+  isIsoDate,
+  isUuid,
+  normaliseCommentText,
+  toUsernameKey,
+  validateCommentText,
+  validateUsername,
+} from '../utils/validators.js';
 
 const SALT_PATTERN = /^[0-9a-f]{32}$/;
 const PASSWORD_HASH_PATTERN = /^[a-z0-9-]+\$\d+\$[0-9a-f]+\$[0-9a-f]+$/;
@@ -30,6 +37,23 @@ export function parseUser(raw) {
     isIsoDate(createdAt);
 
   return isValid ? { id, username, usernameKey, passwordHash, salt, createdAt } : null;
+}
+
+export function parseComment(raw) {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const { id, parentId, authorId, authorName, text, createdAt } = raw;
+  const isValid =
+    isUuid(id) &&
+    (parentId === null || isUuid(parentId)) &&
+    isUuid(authorId) &&
+    validateUsername(authorName).ok &&
+    validateCommentText(text).ok &&
+    normaliseCommentText(text) === text &&
+    isIsoDate(createdAt);
+
+  return isValid ? { id, parentId, authorId, authorName, text, createdAt } : null;
 }
 
 export function parseTabSession(raw) {

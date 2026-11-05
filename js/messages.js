@@ -3,7 +3,19 @@ import { LIMITS } from './config.js';
 export const MESSAGES = Object.freeze({
   emptyState: Object.freeze({
     title: 'No comments yet',
-    text: 'Be the first to start the conversation.',
+    guestText: 'Be the first to start the conversation.',
+    userText: 'Write the first comment above.',
+    guestPrompt: 'Want to join the conversation? Log in at the top.',
+  }),
+  composer: Object.freeze({
+    label: 'Your comment',
+    placeholderFirst: 'Be the first to comment…',
+    placeholder: 'Write a comment…',
+    submit: 'Add Comment',
+    counter: (length) => `${length} / ${LIMITS.comment.max}`,
+  }),
+  comment: Object.freeze({
+    you: 'You',
   }),
   startup: Object.freeze({
     fileProtocol: 'Please open this page through a local server or the live link (see README).',
@@ -43,6 +55,9 @@ export const MESSAGES = Object.freeze({
     passwordTooLong: `Password can have at most ${LIMITS.password.max} characters.`,
     passwordMismatch: 'The passwords do not match.',
     wrongCredentials: 'Wrong username or password.',
+    loginRequired: 'Please log in again to post your comment.',
+    commentEmpty: 'Please write a comment first.',
+    commentTooLong: `A comment can have at most ${LIMITS.comment.max} characters.`,
     storageFailed: 'This browser could not save your data. Please allow site data and try again.',
     unexpected: 'Something went wrong. Please try again.',
   }),

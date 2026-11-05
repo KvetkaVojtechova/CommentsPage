@@ -5,10 +5,15 @@ import { Store } from './core/store.js';
 import { WebStorageAdapter } from './data/storageAdapter.js';
 import { UserRepository } from './data/userRepository.js';
 import { SessionRepository } from './data/sessionRepository.js';
+import { CommentRepository } from './data/commentRepository.js';
 import { AuthService } from './services/authService.js';
+import { CommentService } from './services/commentService.js';
 import { AuthController } from './controllers/authController.js';
+import { CommentController } from './controllers/commentController.js';
 import { HeaderView } from './views/headerView.js';
 import { AuthModalView } from './views/authModalView.js';
+import { ComposerView } from './views/composerView.js';
+import { CommentTreeView } from './views/commentTreeView.js';
 import { EmptyStateView } from './views/emptyStateView.js';
 
 // A startup probe only; all other storage access goes through the data layer.
@@ -52,12 +57,21 @@ async function start() {
   }
   notice.remove();
 
+  const localStore = new WebStorageAdapter(localStorage);
   const authService = new AuthService({
-    userRepository: new UserRepository(new WebStorageAdapter(localStorage)),
+    userRepository: new UserRepository(localStore),
     sessionRepository: new SessionRepository(new WebStorageAdapter(sessionStorage)),
+  });
+  const commentService = new CommentService({
+    commentRepository: new CommentRepository(localStore),
+    authService,
   });
   const store = new Store(new EventBus());
   const authController = new AuthController({ authService, store });
+  const commentController = new CommentController({ commentService, store });
+
+  const composerRoot = document.querySelector('[data-composer]');
+  const commentsRoot = document.querySelector('[data-comments]');
 
   new HeaderView(document.querySelector('[data-auth-controls]'), store, {
     openAuth: () => authController.openAuth(),
@@ -69,10 +83,15 @@ async function start() {
     submitLogin: (values) => authController.submitLogin(values),
     submitRegister: (values) => authController.submitRegister(values),
   });
-  new EmptyStateView(document.querySelector('[data-comments]'), store);
+  new ComposerView(composerRoot, store, {
+    submit: (text) => commentController.submit(text),
+    clearError: () => commentController.clearError(),
+  });
+  new CommentTreeView(commentsRoot, store);
+  new EmptyStateView({ commentsRoot, composerRoot }, store);
 
   await authController.restore();
-  store.setComments([]);
+  await commentController.load();
 }
 
 start().catch((error) => console.error('The page could not start:', error));

@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseList, parseTabSession, parseUser } from '../js/data/schemas.js';
+import { parseComment, parseList, parseTabSession, parseUser } from '../js/data/schemas.js';
+import { storedComment } from './fixtures/comments.js';
 import { storedUser } from './fixtures/users.js';
 
 describe('parseUser', () => {
@@ -44,6 +45,40 @@ describe('parseUser', () => {
       assert.equal(parseUser(raw), null);
     }
   });
+});
+
+describe('parseComment', () => {
+  it('accepts a top-level comment and a reply', () => {
+    assert.deepEqual(parseComment(storedComment()), storedComment());
+    const reply = storedComment({ parentId: '1c2d3e4f-5a6b-4c7d-9e8f-a0b1c2d3e4f5' });
+    assert.deepEqual(parseComment(reply), reply);
+  });
+
+  it('copies only the known fields', () => {
+    const raw = JSON.parse(
+      `{"__proto__": {"x": 1}, "html": "<b>", ${JSON.stringify(storedComment()).slice(1)}`,
+    );
+    const parsed = parseComment(raw);
+
+    assert.deepEqual(Object.keys(parsed), Object.keys(storedComment()));
+    assert.equal(Object.getPrototypeOf(parsed), Object.prototype);
+  });
+
+  for (const [description, overrides] of [
+    ['an invalid id', { id: 'abc' }],
+    ['an invalid parentId', { parentId: 'abc' }],
+    ['a missing parentId', { parentId: undefined }],
+    ['an invalid author name', { authorName: '<script>' }],
+    ['empty text', { text: '' }],
+    ['text over 500 characters', { text: 'x'.repeat(501) }],
+    ['text with control characters', { text: 'hi\u0000' }],
+    ['text that is not a string', { text: 42 }],
+    ['an invalid date', { createdAt: 'now' }],
+  ]) {
+    it(`rejects ${description}`, () => {
+      assert.equal(parseComment(storedComment(overrides)), null);
+    });
+  }
 });
 
 describe('parseTabSession', () => {

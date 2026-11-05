@@ -6,6 +6,8 @@ const USERNAME_PATTERN = new RegExp(
   `^(?:(?=\\p{L})\\p{Script=Latin}|[0-9_.-]){${LIMITS.username.min},${LIMITS.username.max}}$`,
   'u',
 );
+// Control characters except line breaks and tabs, e.g. invisible codes pasted from other apps.
+const CONTROL_CHARACTERS = /[^\P{Cc}\n\t]/gu;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
 
@@ -47,6 +49,21 @@ export function validatePassword(password, confirmation) {
 /** Usernames are unique regardless of case ("Anna" = "anna", "ĽUBO" = "ľubo"). */
 export function toUsernameKey(username) {
   return normaliseUsername(username).toLowerCase();
+}
+
+/** Removes control characters (SEC-06) and surrounding whitespace. */
+export function normaliseCommentText(text) {
+  return String(text ?? '')
+    .replace(CONTROL_CHARACTERS, '')
+    .trim();
+}
+
+/** FR-25: 1–500 characters after trimming. Expects normalised text. */
+export function validateCommentText(text) {
+  if (typeof text !== 'string' || text.length < LIMITS.comment.min) {
+    return invalid('commentEmpty');
+  }
+  return text.length <= LIMITS.comment.max ? VALID : invalid('commentTooLong');
 }
 
 export function isUuid(value) {

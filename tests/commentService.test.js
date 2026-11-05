@@ -1,0 +1,64 @@
+import { beforeEach, describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { PermissionError } from '../js/core/errors.js';
+import { CommentRepository } from '../js/data/commentRepository.js';
+import { MemoryStorageAdapter } from '../js/data/storageAdapter.js';
+import { CommentService } from '../js/services/commentService.js';
+import { isIsoDate, isUuid } from '../js/utils/validators.js';
+
+const ANNA = { id: '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', username: 'Anna' };
+
+describe('CommentService', () => {
+  let currentUser;
+  let repository;
+  let service;
+
+  beforeEach(() => {
+    currentUser = ANNA;
+    repository = new CommentRepository(new MemoryStorageAdapter());
+    service = new CommentService({
+      commentRepository: repository,
+      authService: { getCurrentUser: async () => currentUser },
+    });
+  });
+
+  it('saves a comment with an id, the author and a timestamp', async () => {
+    const comment = await service.add({ text: '  Hello\neveryone!  ' });
+
+    assert.equal(isUuid(comment.id), true);
+    assert.equal(isIsoDate(comment.createdAt), true);
+    assert.deepEqual(
+      { parentId: comment.parentId, authorId: comment.authorId, authorName: comment.authorName },
+      { parentId: null, authorId: ANNA.id, authorName: 'Anna' },
+    );
+    assert.equal(comment.text, 'Hello\neveryone!');
+    assert.deepEqual(await service.getAll(), [comment]);
+  });
+
+  it('refuses a guest, even when called directly (FR-12)', async () => {
+    currentUser = null;
+
+    await assert.rejects(service.add({ text: 'Hello' }), PermissionError);
+    assert.deepEqual(await repository.getAll(), []);
+  });
+
+  it('refuses empty, whitespace-only and too long text', async () => {
+    for (const text of ['', '   \n\t ', '\u0007']) {
+      await assert.rejects(service.add({ text }), { code: 'commentEmpty' });
+    }
+    await assert.rejects(service.add({ text: 'x'.repeat(501) }), { code: 'commentTooLong' });
+    assert.deepEqual(await repository.getAll(), []);
+  });
+
+  it('accepts exactly 500 characters', async () => {
+    const comment = await service.add({ text: 'x'.repeat(500) });
+
+    assert.equal(comment.text.length, 500);
+  });
+
+  it('stores unsafe-looking text as plain text, unchanged', async () => {
+    const text = '<img src=x onerror=alert(1)>';
+
+    assert.equal((await service.add({ text })).text, text);
+  });
+});

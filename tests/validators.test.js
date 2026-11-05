@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import {
   isIsoDate,
   isUuid,
+  normaliseCommentText,
   normaliseUsername,
   toUsernameKey,
+  validateCommentText,
   validatePassword,
   validateUsername,
 } from '../js/utils/validators.js';
@@ -72,6 +74,23 @@ describe('validatePassword', () => {
 
   it('rejects entries that do not match', () => {
     assert.equal(validatePassword(twelve, `${twelve}!`).code, 'passwordMismatch');
+  });
+});
+
+describe('normaliseCommentText and validateCommentText', () => {
+  it('trims and removes control characters but keeps line breaks and tabs', () => {
+    assert.equal(normaliseCommentText('  Hi\u0000 there\r\n\tyou \n'), 'Hi there\n\tyou');
+  });
+
+  it('accepts 1–500 characters', () => {
+    assert.equal(validateCommentText('a').ok, true);
+    assert.equal(validateCommentText('x'.repeat(500)).ok, true);
+  });
+
+  it('rejects empty and too long text', () => {
+    assert.equal(validateCommentText('').code, 'commentEmpty');
+    assert.equal(validateCommentText(normaliseCommentText('  \n ')).code, 'commentEmpty');
+    assert.equal(validateCommentText('x'.repeat(501)).code, 'commentTooLong');
   });
 });
 

@@ -10,6 +10,7 @@ export const STORAGE_KEYS = Object.freeze({
 export const LIMITS = Object.freeze({
   username: Object.freeze({ min: 3, max: 20 }),
   password: Object.freeze({ min: 12, max: 128 }),
+  comment: Object.freeze({ min: 1, max: 500 }),
 });
 
 export const PBKDF2 = Object.freeze({
@@ -21,6 +22,10 @@ export const PBKDF2 = Object.freeze({
 
 export const SESSION = Object.freeze({
   tokenBytes: 32,
+});
+
+export const UI = Object.freeze({
+  locale: 'en-GB',
 });
 
 export const ASSETS = Object.freeze({
