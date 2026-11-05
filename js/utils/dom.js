@@ -5,6 +5,7 @@
 
 const ALLOWED_ATTRIBUTES = new Set([
   'alt',
+  'autocapitalize',
   'autocomplete',
   'datetime',
   'disabled',
@@ -15,10 +16,12 @@ const ALLOWED_ATTRIBUTES = new Set([
   'maxlength',
   'minlength',
   'name',
+  'novalidate',
   'placeholder',
   'required',
   'role',
   'rows',
+  'spellcheck',
   'src',
   'tabindex',
   'title',

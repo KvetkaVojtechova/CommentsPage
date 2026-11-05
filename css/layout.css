@@ -23,6 +23,13 @@
   color: var(--color-reply);
 }
 
+.site-header__account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-md);
+}
+
 .page {
   display: flex;
   flex-direction: column;

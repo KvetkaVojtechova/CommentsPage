@@ -69,4 +69,16 @@ export class Store {
     this.#state.ui.modal = null;
     this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
   }
+
+  /** @param {string} key Where the message belongs, e.g. "auth.username". */
+  setError(key, message) {
+    this.#state.ui.errors.set(key, message);
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
+  clearError(key) {
+    if (this.#state.ui.errors.delete(key)) {
+      this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+    }
+  }
 }

@@ -9,6 +9,10 @@
   --color-text: #1f2933;
   --color-text-muted: #5f6b76;
   --color-border: #e1e4e8;
+  --color-input-border: #8a949e;
+  --color-error: #b3261e;
+  --color-error-bg: #fdecea;
+  --color-backdrop: rgb(0 0 0 / 0.45);
 
   --font-family: 'Lucida Handwriting', 'Segoe Script', 'Bradley Hand', 'Apple Chancery', cursive;
   --font-size-base: 18px;

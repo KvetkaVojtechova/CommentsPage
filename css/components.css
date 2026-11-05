@@ -43,6 +43,174 @@
   color: var(--color-white);
 }
 
+.btn--primary {
+  border-color: var(--color-reply);
+  background-color: var(--color-reply);
+  color: var(--color-white);
+}
+
+.btn--primary:hover:not(:disabled),
+.btn--primary:focus-visible {
+  background-color: var(--color-white);
+  color: var(--color-reply);
+}
+
+.btn--secondary {
+  border-color: var(--color-input-border);
+  color: var(--color-text);
+}
+
+.btn--secondary:hover:not(:disabled),
+.btn--secondary:focus-visible {
+  border-color: var(--color-text);
+}
+
+.btn--link {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--color-reply);
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.btn--link:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* User badge in the header */
+.user-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.avatar {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background-color: var(--color-reply);
+  color: var(--color-white);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Modal */
+.modal {
+  width: min(28rem, 90%);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-white);
+  color: var(--color-text);
+  box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.2);
+}
+
+/* The dialog itself is not a control; its fields show their own focus ring. */
+.modal:focus-visible {
+  outline: none;
+}
+
+.modal::backdrop {
+  background-color: var(--color-backdrop);
+}
+
+.modal__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.modal__title {
+  font-size: 1.3rem;
+  color: var(--color-reply);
+}
+
+.modal__close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal__close:hover {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.modal__switch {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Forms */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.field[hidden] {
+  display: none;
+}
+
+.field__label {
+  font-size: 0.9rem;
+}
+
+.field__input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-white);
+}
+
+.field__input[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.field__error,
+.form-error {
+  color: var(--color-error);
+  font-size: 0.85rem;
+}
+
+.form-error {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background-color: var(--color-error-bg);
+}
+
 /* Empty state */
 .empty-state {
   display: flex;
