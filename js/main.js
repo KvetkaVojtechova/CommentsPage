@@ -8,6 +8,7 @@ import { SessionRepository } from './data/sessionRepository.js';
 import { CommentRepository } from './data/commentRepository.js';
 import { AuthService } from './services/authService.js';
 import { CommentService } from './services/commentService.js';
+import { ModerationService } from './services/moderationService.js';
 import { AuthController } from './controllers/authController.js';
 import { CommentController } from './controllers/commentController.js';
 import { HeaderView } from './views/headerView.js';
@@ -65,6 +66,10 @@ async function start() {
   const commentService = new CommentService({
     commentRepository: new CommentRepository(localStore),
     authService,
+    moderationService: new ModerationService({
+      createWorker: () =>
+        new Worker(new URL('./worker/moderation.worker.js', import.meta.url), { type: 'module' }),
+    }),
   });
   const store = new Store(new EventBus());
   const authController = new AuthController({ authService, store });

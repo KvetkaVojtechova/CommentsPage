@@ -15,7 +15,7 @@ function createInitialState() {
       modal: null,
       replyTargetId: null,
       checkingTargetId: null,
-      errors: new Map(),
+      errors: new Map(), // key → { message, kind }
       collapsed: new Set(),
       expanded: new Set(),
       focusId: null,
@@ -85,9 +85,13 @@ export class Store {
     this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
   }
 
-  /** @param {string} key Where the message belongs, e.g. "auth.username". */
-  setError(key, message) {
-    this.#state.ui.errors.set(key, message);
+  /**
+   * @param {string} key Where the message belongs, e.g. "auth.username".
+   * @param {string} message
+   * @param {'error' | 'blocked'} [kind] "blocked" is the orange banned-word message.
+   */
+  setError(key, message, kind = 'error') {
+    this.#state.ui.errors.set(key, { message, kind });
     this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
   }
 

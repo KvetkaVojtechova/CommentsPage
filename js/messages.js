@@ -1,4 +1,6 @@
-import { LIMITS } from './config.js';
+import { LIMITS, UI } from './config.js';
+
+const listFormat = new Intl.ListFormat(UI.locale, { type: 'conjunction' });
 
 export const MESSAGES = Object.freeze({
   emptyState: Object.freeze({
@@ -14,6 +16,8 @@ export const MESSAGES = Object.freeze({
     replyLabel: 'Your reply',
     replyPlaceholder: 'Write a reply…',
     submit: 'Add Comment',
+    checkingButton: 'Checking…',
+    checking: 'Checking your comment…',
     cancel: 'Cancel',
     counter: (length) => `${length} / ${LIMITS.comment.max}`,
   }),
@@ -60,6 +64,11 @@ export const MESSAGES = Object.freeze({
     passwordMismatch: 'The passwords do not match.',
     wrongCredentials: 'Wrong username or password.',
     loginRequired: 'Please log in again to post your comment.',
+    blockedWords: (words) =>
+      words.length === 1
+        ? `You cannot use the word “${words[0]}” in your comment.`
+        : `You cannot use the words ${listFormat.format(words.map((word) => `“${word}”`))} in your comment.`,
+    moderationFailed: 'We could not check your comment. Please try again.',
     parentMissing: 'The comment you are replying to no longer exists.',
     commentEmpty: 'Please write a comment first.',
     commentTooLong: `A comment can have at most ${LIMITS.comment.max} characters.`,

@@ -56,6 +56,23 @@ export default [
     },
   },
   {
+    files: ['js/worker/**/*.js'],
+    languageOptions: { globals: globals.worker },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*'],
+              message: 'The worker uses only its own files, nothing from the page.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['tests/**/*.js', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },

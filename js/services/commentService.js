@@ -1,4 +1,4 @@
-import { PermissionError, ValidationError } from '../core/errors.js';
+import { ModerationError, PermissionError, ValidationError } from '../core/errors.js';
 import { isUuid, normaliseCommentText, validateCommentText } from '../utils/validators.js';
 
 export function createComment({ parentId, author, text }) {
@@ -15,16 +15,19 @@ export function createComment({ parentId, author, text }) {
 export class CommentService {
   #comments;
   #auth;
+  #moderation;
 
   /**
    * @param {{
    *   commentRepository: import('../data/commentRepository.js').CommentRepository,
    *   authService: { getCurrentUser: () => Promise<{ id: string, username: string } | null> },
+   *   moderationService: { check: (text: string) => Promise<{ blocked: boolean, words: string[] }> },
    * }} dependencies
    */
-  constructor({ commentRepository, authService }) {
+  constructor({ commentRepository, authService, moderationService }) {
     this.#comments = commentRepository;
     this.#auth = authService;
+    this.#moderation = moderationService;
   }
 
   async getAll() {
@@ -33,7 +36,8 @@ export class CommentService {
 
   /**
    * Saves a comment by the logged-in user: top-level when `parentId` is null, otherwise a reply.
-   * Permission is checked here too, not only by hiding the buttons (FR-12).
+   * Permission is checked here too, not only by hiding the buttons (FR-12). The banned-word
+   * check runs here as well, so nothing can be saved without it (D-12).
    * @param {{ parentId?: string | null, text: string }} input
    */
   async add({ parentId = null, text }) {
@@ -50,6 +54,17 @@ export class CommentService {
 
     if (parentId !== null && !(isUuid(parentId) && (await this.#comments.findById(parentId)))) {
       throw new ValidationError('parentId', 'parentMissing');
+    }
+
+    // The same text is checked and saved (SEC-33).
+    const { blocked, words } = await this.#moderation.check(cleanText);
+    if (blocked) {
+      throw new ModerationError('blocked', words);
+    }
+    // The check takes a moment; the user may have logged out in another tab meanwhile.
+    const stillLoggedIn = await this.#auth.getCurrentUser();
+    if (stillLoggedIn?.id !== author.id) {
+      throw new PermissionError();
     }
 
     const comment = createComment({ parentId, author, text: cleanText });

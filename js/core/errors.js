@@ -32,12 +32,12 @@ export class PermissionError extends AppError {
 export class ModerationError extends AppError {
   /**
    * @param {'blocked' | 'failed'} reason
-   * @param {string | null} [word] The banned word, when `reason` is 'blocked'.
+   * @param {string[]} [words] The banned words found, when `reason` is 'blocked'.
    */
-  constructor(reason, word = null, { cause } = {}) {
-    super(reason === 'blocked' ? 'blockedWord' : 'moderationFailed', { cause });
+  constructor(reason, words = [], { cause } = {}) {
+    super(reason === 'blocked' ? 'blockedWords' : 'moderationFailed', { cause });
     this.reason = reason;
-    this.word = word;
+    this.words = words;
   }
 }
 

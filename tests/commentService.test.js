@@ -1,6 +1,6 @@
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { PermissionError } from '../js/core/errors.js';
+import { ModerationError, PermissionError } from '../js/core/errors.js';
 import { CommentRepository } from '../js/data/commentRepository.js';
 import { MemoryStorageAdapter } from '../js/data/storageAdapter.js';
 import { CommentService } from '../js/services/commentService.js';
@@ -12,13 +12,23 @@ describe('CommentService', () => {
   let currentUser;
   let repository;
   let service;
+  let checkedTexts;
+  let moderate;
 
   beforeEach(() => {
     currentUser = ANNA;
+    checkedTexts = [];
+    moderate = async () => ({ blocked: false, words: [] });
     repository = new CommentRepository(new MemoryStorageAdapter());
     service = new CommentService({
       commentRepository: repository,
       authService: { getCurrentUser: async () => currentUser },
+      moderationService: {
+        check: async (text) => {
+          checkedTexts.push(text);
+          return moderate(text);
+        },
+      },
     });
   });
 
@@ -85,5 +95,47 @@ describe('CommentService', () => {
     currentUser = null;
 
     await assert.rejects(service.add({ parentId: 'anything', text: 'Hello' }), PermissionError);
+  });
+
+  it('checks exactly the text that is saved', async () => {
+    const comment = await service.add({ text: '  Hello  ' });
+
+    assert.deepEqual(checkedTexts, ['Hello']);
+    assert.equal(comment.text, 'Hello');
+  });
+
+  it('does not save a comment with a banned word', async () => {
+    moderate = async () => ({ blocked: true, words: ['Putin', 'War'] });
+
+    await assert.rejects(service.add({ text: 'I love Putin and war' }), {
+      name: 'ModerationError',
+      reason: 'blocked',
+      words: ['Putin', 'War'],
+    });
+    assert.deepEqual(await repository.getAll(), []);
+  });
+
+  it('does not save a comment when the check fails', async () => {
+    moderate = async () => {
+      throw new ModerationError('failed');
+    };
+
+    await assert.rejects(service.add({ text: 'Hello' }), { reason: 'failed' });
+    assert.deepEqual(await repository.getAll(), []);
+  });
+
+  it('does not check empty text', async () => {
+    await assert.rejects(service.add({ text: '   ' }), { code: 'commentEmpty' });
+    assert.deepEqual(checkedTexts, []);
+  });
+
+  it('does not save when the user logged out during the check', async () => {
+    moderate = async () => {
+      currentUser = null;
+      return { blocked: false, words: [] };
+    };
+
+    await assert.rejects(service.add({ text: 'Hello' }), PermissionError);
+    assert.deepEqual(await repository.getAll(), []);
   });
 });

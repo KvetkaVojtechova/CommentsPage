@@ -203,7 +203,7 @@ export class AuthModalView {
 
   #renderErrors(errors) {
     for (const [name, field] of Object.entries(this.#fields)) {
-      const message = errors.get(authErrorKey(name));
+      const message = errors.get(authErrorKey(name))?.message;
       showError(field.error, message);
       if (message) {
         field.input.setAttribute('aria-invalid', 'true');
@@ -211,7 +211,7 @@ export class AuthModalView {
         field.input.removeAttribute('aria-invalid');
       }
     }
-    showError(this.#formError, errors.get(authErrorKey('form')));
+    showError(this.#formError, errors.get(authErrorKey('form'))?.message);
   }
 
   async #onSubmit(event) {

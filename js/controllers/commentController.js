@@ -1,4 +1,4 @@
-import { AppError } from '../core/errors.js';
+import { AppError, ModerationError } from '../core/errors.js';
 import { MESSAGES } from '../messages.js';
 
 /** The Store key for an error under a comment box: the top one, or the reply box of a comment. */
@@ -44,11 +44,7 @@ export class CommentController {
       this.#store.addComment(comment);
       return true;
     } catch (error) {
-      if (!(error instanceof AppError)) {
-        console.error(error);
-      }
-      const message = MESSAGES.errors[error?.messageKey] ?? MESSAGES.errors.unexpected;
-      this.#store.setError(commentErrorKey(parentId), message);
+      this.#showError(parentId, error);
       return false;
     }
   }
@@ -65,6 +61,18 @@ export class CommentController {
 
   clearError(parentId) {
     this.#store.clearError(commentErrorKey(parentId));
+  }
+
+  #showError(parentId, error) {
+    const key = commentErrorKey(parentId);
+    if (error instanceof ModerationError && error.reason === 'blocked') {
+      this.#store.setError(key, MESSAGES.errors.blockedWords(error.words), 'blocked');
+      return;
+    }
+    if (!(error instanceof AppError)) {
+      console.error(error);
+    }
+    this.#store.setError(key, MESSAGES.errors[error?.messageKey] ?? MESSAGES.errors.unexpected);
   }
 
   #clearReplyError() {

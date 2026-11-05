@@ -23,6 +23,7 @@ export class ComposerView {
   #input;
   #counter;
   #submit;
+  #status;
   #error;
 
   /**
@@ -104,6 +105,7 @@ export class ComposerView {
       text: MESSAGES.composer.submit,
       attrs: { type: 'submit' },
     });
+    this.#status = el('p', { className: 'composer__status', attrs: { role: 'status' } });
     this.#error = el('p', {
       className: 'composer__error',
       attrs: { id: `${inputId}-error`, role: 'alert', hidden: true },
@@ -138,6 +140,7 @@ export class ComposerView {
           attrs: { for: inputId },
         }),
         this.#input,
+        this.#status,
         this.#error,
         el('div', { className: 'composer__footer' }, [
           this.#counter,
@@ -187,10 +190,15 @@ export class ComposerView {
     }
   }
 
-  // Add Comment stays disabled while the text is empty or only whitespace (FR-25).
+  // Add Comment stays disabled while the text is empty or only whitespace (FR-25), and while
+  // the check runs, so a double click cannot post twice (FR-37).
   #renderState() {
     this.#counter.textContent = MESSAGES.composer.counter(this.#input.value.length);
     this.#submit.disabled = this.#busy || normaliseCommentText(this.#input.value) === '';
+    this.#submit.textContent = this.#busy
+      ? MESSAGES.composer.checkingButton
+      : MESSAGES.composer.submit;
+    this.#status.textContent = this.#busy ? MESSAGES.composer.checking : '';
   }
 
   #renderPlaceholder() {
@@ -204,9 +212,11 @@ export class ComposerView {
       : MESSAGES.composer.placeholder;
   }
 
+  // The message disappears as soon as the text is edited (FR-39), see #onInput.
   #renderError() {
-    const message = this.#store.state.ui.errors.get(commentErrorKey(this.#parentId));
-    this.#error.textContent = message ?? '';
-    this.#error.hidden = !message;
+    const error = this.#store.state.ui.errors.get(commentErrorKey(this.#parentId));
+    this.#error.textContent = error?.message ?? '';
+    this.#error.hidden = !error;
+    this.#error.classList.toggle('composer__error--blocked', error?.kind === 'blocked');
   }
 }

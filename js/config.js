@@ -24,6 +24,11 @@ export const SESSION = Object.freeze({
   tokenBytes: 32,
 });
 
+export const MODERATION = Object.freeze({
+  // FR-36: a check that takes longer fails, and the comment is not saved.
+  timeoutMs: 5_000,
+});
+
 export const UI = Object.freeze({
   locale: 'en-GB',
   // From this level on, replies stop indenting further (spec 4.4).
