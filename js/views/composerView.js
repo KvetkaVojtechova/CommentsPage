@@ -1,18 +1,23 @@
 import { LIMITS } from '../config.js';
-import { COMPOSER_ERROR_KEY } from '../controllers/commentController.js';
+import { commentErrorKey } from '../controllers/commentController.js';
 import { STORE_EVENTS } from '../core/store.js';
 import { MESSAGES } from '../messages.js';
 import { el } from '../utils/dom.js';
 import { normaliseCommentText } from '../utils/validators.js';
 
-const INPUT_ID = 'comment-text';
+let replyBoxCount = 0;
 
-/** The comment box, shown only to logged-in users (FR-11). */
+/**
+ * A comment box. Without a parentId it is the box at the top of the page, shown only to
+ * logged-in users (FR-11). With a parentId it is an inline reply box with a Cancel button.
+ */
 export class ComposerView {
   #root;
   #store;
   #handlers;
+  #parentId;
   #busy = false;
+  #unsubscribes = [];
 
   #form;
   #input;
@@ -23,20 +28,36 @@ export class ComposerView {
   /**
    * @param {HTMLElement} root
    * @param {import('../core/store.js').Store} store
-   * @param {{ submit: (text: string) => Promise<boolean>, clearError: () => void }} handlers
+   * @param {{
+   *   submit: (parentId: string | null, text: string) => Promise<boolean>,
+   *   clearError: (parentId: string | null) => void,
+   *   cancel?: () => void,
+   * }} handlers `cancel` is needed for a reply box.
+   * @param {{ parentId?: string | null }} [options]
    */
-  constructor(root, store, handlers) {
+  constructor(root, store, handlers, { parentId = null } = {}) {
     this.#root = root;
     this.#store = store;
     this.#handlers = handlers;
+    this.#parentId = parentId;
     this.#build();
+    this.#listen(STORE_EVENTS.uiChanged, () => this.#renderError());
 
-    store.on(STORE_EVENTS.userChanged, () => this.render());
-    store.on(STORE_EVENTS.commentsLoaded, () => this.#renderPlaceholder());
-    store.on(STORE_EVENTS.commentAdded, () => this.#renderPlaceholder());
-    store.on(STORE_EVENTS.uiChanged, () => this.#renderError());
+    if (this.#isReply) {
+      root.append(this.#form);
+      this.#input.focus();
+    } else {
+      this.#listen(STORE_EVENTS.userChanged, () => this.render());
+      this.#listen(STORE_EVENTS.commentsLoaded, () => this.#renderPlaceholder());
+      this.#listen(STORE_EVENTS.commentAdded, () => this.#renderPlaceholder());
+    }
   }
 
+  get #isReply() {
+    return this.#parentId !== null;
+  }
+
+  /** Shows or hides the top comment box for the current user. */
   render() {
     if (this.#store.state.currentUser) {
       this.#root.append(this.#form);
@@ -48,22 +69,35 @@ export class ComposerView {
     }
   }
 
+  /** Removes a reply box and stops listening to the Store. */
+  destroy() {
+    for (const unsubscribe of this.#unsubscribes) {
+      unsubscribe();
+    }
+    this.#form.remove();
+  }
+
+  #listen(event, handler) {
+    this.#unsubscribes.push(this.#store.on(event, handler));
+  }
+
   #build() {
+    const inputId = this.#isReply ? `reply-text-${++replyBoxCount}` : 'comment-text';
     this.#input = el('textarea', {
       className: 'composer__input',
       attrs: {
-        id: INPUT_ID,
+        id: inputId,
         name: 'text',
         rows: 3,
         maxlength: LIMITS.comment.max,
-        'aria-describedby': `${INPUT_ID}-counter ${INPUT_ID}-error`,
+        'aria-describedby': `${inputId}-counter ${inputId}-error`,
       },
       dataset: { commentInput: '' },
       on: { input: () => this.#onInput() },
     });
     this.#counter = el('span', {
       className: 'composer__counter',
-      attrs: { id: `${INPUT_ID}-counter` },
+      attrs: { id: `${inputId}-counter` },
     });
     this.#submit = el('button', {
       className: 'btn btn--add',
@@ -72,25 +106,43 @@ export class ComposerView {
     });
     this.#error = el('p', {
       className: 'composer__error',
-      attrs: { id: `${INPUT_ID}-error`, role: 'alert', hidden: true },
+      attrs: { id: `${inputId}-error`, role: 'alert', hidden: true },
     });
+
+    const buttons = this.#isReply
+      ? [
+          el('button', {
+            className: 'btn btn--secondary',
+            text: MESSAGES.composer.cancel,
+            attrs: { type: 'button' },
+            on: { click: () => this.#handlers.cancel() },
+          }),
+          this.#submit,
+        ]
+      : [this.#submit];
 
     this.#form = el(
       'form',
       {
-        className: 'composer__form',
+        className: this.#isReply ? 'composer__form composer__form--reply' : 'composer__form',
         attrs: { novalidate: true },
-        on: { submit: (event) => this.#onSubmit(event) },
+        on: {
+          submit: (event) => this.#onSubmit(event),
+          keydown: (event) => this.#onKeydown(event),
+        },
       },
       [
         el('label', {
           className: 'visually-hidden',
-          text: MESSAGES.composer.label,
-          attrs: { for: INPUT_ID },
+          text: this.#isReply ? MESSAGES.composer.replyLabel : MESSAGES.composer.label,
+          attrs: { for: inputId },
         }),
         this.#input,
         this.#error,
-        el('div', { className: 'composer__footer' }, [this.#counter, this.#submit]),
+        el('div', { className: 'composer__footer' }, [
+          this.#counter,
+          el('div', { className: 'composer__buttons' }, buttons),
+        ]),
       ],
     );
     this.#renderState();
@@ -100,7 +152,14 @@ export class ComposerView {
   #onInput() {
     this.#renderState();
     if (!this.#error.hidden) {
-      this.#handlers.clearError();
+      this.#handlers.clearError(this.#parentId);
+    }
+  }
+
+  #onKeydown(event) {
+    if (this.#isReply && event.key === 'Escape') {
+      event.preventDefault();
+      this.#handlers.cancel();
     }
   }
 
@@ -115,13 +174,16 @@ export class ComposerView {
     this.#busy = true;
     this.#renderState();
     try {
-      if (await this.#handlers.submit(text)) {
+      if (await this.#handlers.submit(this.#parentId, text)) {
         this.#input.value = '';
       }
     } finally {
       this.#busy = false;
       this.#renderState();
-      this.#input.focus();
+      // A reply box is gone after a successful reply.
+      if (this.#form.isConnected) {
+        this.#input.focus();
+      }
     }
   }
 
@@ -132,6 +194,10 @@ export class ComposerView {
   }
 
   #renderPlaceholder() {
+    if (this.#isReply) {
+      this.#input.placeholder = MESSAGES.composer.replyPlaceholder;
+      return;
+    }
     const isFirst = this.#store.state.comments.length === 0;
     this.#input.placeholder = isFirst
       ? MESSAGES.composer.placeholderFirst
@@ -139,7 +205,7 @@ export class ComposerView {
   }
 
   #renderError() {
-    const message = this.#store.state.ui.errors.get(COMPOSER_ERROR_KEY);
+    const message = this.#store.state.ui.errors.get(commentErrorKey(this.#parentId));
     this.#error.textContent = message ?? '';
     this.#error.hidden = !message;
   }

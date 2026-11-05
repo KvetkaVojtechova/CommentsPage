@@ -83,11 +83,16 @@ async function start() {
     submitLogin: (values) => authController.submitLogin(values),
     submitRegister: (values) => authController.submitRegister(values),
   });
-  new ComposerView(composerRoot, store, {
-    submit: (text) => commentController.submit(text),
-    clearError: () => commentController.clearError(),
+  const commentHandlers = {
+    submit: (parentId, text) => commentController.submit(parentId, text),
+    clearError: (parentId) => commentController.clearError(parentId),
+  };
+  new ComposerView(composerRoot, store, commentHandlers);
+  new CommentTreeView(commentsRoot, store, {
+    ...commentHandlers,
+    openReply: (commentId) => commentController.openReply(commentId),
+    cancelReply: () => commentController.cancelReply(),
   });
-  new CommentTreeView(commentsRoot, store);
   new EmptyStateView({ commentsRoot, composerRoot }, store);
 
   await authController.restore();

@@ -11,11 +11,15 @@ export const MESSAGES = Object.freeze({
     label: 'Your comment',
     placeholderFirst: 'Be the first to comment…',
     placeholder: 'Write a comment…',
+    replyLabel: 'Your reply',
+    replyPlaceholder: 'Write a reply…',
     submit: 'Add Comment',
+    cancel: 'Cancel',
     counter: (length) => `${length} / ${LIMITS.comment.max}`,
   }),
   comment: Object.freeze({
     you: 'You',
+    reply: 'Reply',
   }),
   startup: Object.freeze({
     fileProtocol: 'Please open this page through a local server or the live link (see README).',
@@ -56,6 +60,7 @@ export const MESSAGES = Object.freeze({
     passwordMismatch: 'The passwords do not match.',
     wrongCredentials: 'Wrong username or password.',
     loginRequired: 'Please log in again to post your comment.',
+    parentMissing: 'The comment you are replying to no longer exists.',
     commentEmpty: 'Please write a comment first.',
     commentTooLong: `A comment can have at most ${LIMITS.comment.max} characters.`,
     storageFailed: 'This browser could not save your data. Please allow site data and try again.',

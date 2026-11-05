@@ -26,6 +26,10 @@ export const SESSION = Object.freeze({
 
 export const UI = Object.freeze({
   locale: 'en-GB',
+  // From this level on, replies stop indenting further (spec 4.4).
+  indentCapLevel: 6,
+  // Deeper replies are not drawn; this also stops broken data that loops (spec 5.3).
+  maxDepth: 50,
 });
 
 export const ASSETS = Object.freeze({

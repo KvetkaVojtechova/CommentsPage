@@ -14,6 +14,14 @@ describe('CommentRepository', () => {
     assert.deepEqual(await repository.getAll(), [storedComment()]);
   });
 
+  it('finds a comment by id', async () => {
+    const repository = new CommentRepository(new MemoryStorageAdapter());
+    await repository.add(storedComment());
+
+    assert.deepEqual(await repository.findById(storedComment().id), storedComment());
+    assert.equal(await repository.findById('1c2d3e4f-5a6b-4c7d-9e8f-a0b1c2d3e4f5'), null);
+  });
+
   it('keeps a comment saved by another tab in the meantime', async () => {
     const storage = new MemoryStorageAdapter();
     const firstTab = new CommentRepository(storage);

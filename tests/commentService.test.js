@@ -61,4 +61,29 @@ describe('CommentService', () => {
 
     assert.equal((await service.add({ text })).text, text);
   });
+
+  it('saves a reply under an existing comment', async () => {
+    const parent = await service.add({ text: 'Question?' });
+    const reply = await service.add({ parentId: parent.id, text: 'Answer.' });
+
+    assert.equal(reply.parentId, parent.id);
+    assert.deepEqual(await service.getAll(), [parent, reply]);
+  });
+
+  it('refuses a reply to a comment that does not exist', async () => {
+    await assert.rejects(
+      service.add({ parentId: '1c2d3e4f-5a6b-4c7d-9e8f-a0b1c2d3e4f5', text: 'Hello' }),
+      { field: 'parentId', code: 'parentMissing' },
+    );
+    await assert.rejects(service.add({ parentId: 'not-an-id', text: 'Hello' }), {
+      code: 'parentMissing',
+    });
+    assert.deepEqual(await repository.getAll(), []);
+  });
+
+  it('refuses a guest reply before looking at the parent', async () => {
+    currentUser = null;
+
+    await assert.rejects(service.add({ parentId: 'anything', text: 'Hello' }), PermissionError);
+  });
 });

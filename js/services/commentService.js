@@ -1,5 +1,5 @@
 import { PermissionError, ValidationError } from '../core/errors.js';
-import { normaliseCommentText, validateCommentText } from '../utils/validators.js';
+import { isUuid, normaliseCommentText, validateCommentText } from '../utils/validators.js';
 
 export function createComment({ parentId, author, text }) {
   return {
@@ -32,10 +32,11 @@ export class CommentService {
   }
 
   /**
-   * Saves a top-level comment by the logged-in user.
-   * Permission is checked here too, not only by hiding the comment box (FR-12).
+   * Saves a comment by the logged-in user: top-level when `parentId` is null, otherwise a reply.
+   * Permission is checked here too, not only by hiding the buttons (FR-12).
+   * @param {{ parentId?: string | null, text: string }} input
    */
-  async add({ text }) {
+  async add({ parentId = null, text }) {
     const author = await this.#auth.getCurrentUser();
     if (!author) {
       throw new PermissionError();
@@ -47,7 +48,11 @@ export class CommentService {
       throw new ValidationError('text', check.code);
     }
 
-    const comment = createComment({ parentId: null, author, text: cleanText });
+    if (parentId !== null && !(isUuid(parentId) && (await this.#comments.findById(parentId)))) {
+      throw new ValidationError('parentId', 'parentMissing');
+    }
+
+    const comment = createComment({ parentId, author, text: cleanText });
     await this.#comments.add(comment);
     return comment;
   }

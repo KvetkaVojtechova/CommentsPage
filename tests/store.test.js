@@ -69,4 +69,29 @@ describe('Store', () => {
       [STORE_EVENTS.uiChanged, STORE_EVENTS.uiChanged],
     );
   });
+
+  it('openReply and closeReply set the reply target and emit ui:changed', () => {
+    const store = new Store();
+    const events = recordEvents(store);
+
+    store.openReply('c1');
+    assert.equal(store.state.ui.replyTargetId, 'c1');
+    store.closeReply();
+    assert.equal(store.state.ui.replyTargetId, null);
+
+    assert.deepEqual(
+      events.map((event) => event.type),
+      [STORE_EVENTS.uiChanged, STORE_EVENTS.uiChanged],
+    );
+  });
+
+  it('closes the reply box when the user logs out', () => {
+    const store = new Store();
+    store.setUser({ id: 'u1', username: 'Anna' });
+    store.openReply('c1');
+
+    store.setUser(null);
+
+    assert.equal(store.state.ui.replyTargetId, null);
+  });
 });

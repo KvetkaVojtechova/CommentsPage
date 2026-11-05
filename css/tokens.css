@@ -34,3 +34,10 @@
   --focus-ring: 3px solid var(--color-reply);
   --transition-fast: 150ms ease;
 }
+
+/* On narrow screens, deep threads keep enough room for the text. */
+@media (max-width: 40rem) {
+  :root {
+    --indent-step: 1rem;
+  }
+}

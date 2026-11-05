@@ -1,8 +1,10 @@
 import { AppError } from '../core/errors.js';
 import { MESSAGES } from '../messages.js';
 
-/** The Store key for an error shown under a comment box. Step 4 adds one per reply box. */
-export const COMPOSER_ERROR_KEY = 'comment.new';
+/** The Store key for an error under a comment box: the top one, or the reply box of a comment. */
+export function commentErrorKey(parentId) {
+  return `comment.${parentId ?? 'new'}`;
+}
 
 export class CommentController {
   #comments;
@@ -28,23 +30,47 @@ export class CommentController {
     }
   }
 
-  /** @returns {Promise<boolean>} Whether the comment was saved; on failure the draft is kept. */
-  async submit(text) {
-    this.clearError();
+  /**
+   * @param {string | null} parentId Null for a top-level comment, otherwise the comment replied to.
+   * @returns {Promise<boolean>} Whether the comment was saved; on failure the draft is kept.
+   */
+  async submit(parentId, text) {
+    this.clearError(parentId);
     try {
-      this.#store.addComment(await this.#comments.add({ text }));
+      const comment = await this.#comments.add({ parentId, text });
+      if (parentId) {
+        this.#store.closeReply();
+      }
+      this.#store.addComment(comment);
       return true;
     } catch (error) {
       if (!(error instanceof AppError)) {
         console.error(error);
       }
       const message = MESSAGES.errors[error?.messageKey] ?? MESSAGES.errors.unexpected;
-      this.#store.setError(COMPOSER_ERROR_KEY, message);
+      this.#store.setError(commentErrorKey(parentId), message);
       return false;
     }
   }
 
-  clearError() {
-    this.#store.clearError(COMPOSER_ERROR_KEY);
+  openReply(commentId) {
+    this.#clearReplyError();
+    this.#store.openReply(commentId);
+  }
+
+  cancelReply() {
+    this.#clearReplyError();
+    this.#store.closeReply();
+  }
+
+  clearError(parentId) {
+    this.#store.clearError(commentErrorKey(parentId));
+  }
+
+  #clearReplyError() {
+    const openId = this.#store.state.ui.replyTargetId;
+    if (openId) {
+      this.clearError(openId);
+    }
   }
 }

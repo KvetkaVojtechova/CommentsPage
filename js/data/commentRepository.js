@@ -18,6 +18,10 @@ export class CommentRepository {
     return this.#readAll();
   }
 
+  async findById(id) {
+    return this.#readAll().find((comment) => comment.id === id) ?? null;
+  }
+
   /** Reads the latest list before writing, so a comment saved by another tab is not lost. */
   async add(comment) {
     this.#storage.write(STORAGE_KEYS.comments, [...this.#readAll(), comment]);

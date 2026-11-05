@@ -249,6 +249,16 @@
   font-size: 0.8rem;
 }
 
+.composer__buttons {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.composer__form--reply {
+  margin-block-start: var(--space-sm);
+  background-color: var(--color-bg);
+}
+
 .composer__error {
   color: var(--color-error);
   font-size: 0.85rem;
@@ -310,6 +320,26 @@
 
 .comment__text {
   white-space: pre-wrap;
+}
+
+.comment__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.comment__actions .btn {
+  padding-block: var(--space-xs);
+  font-size: 0.8rem;
+}
+
+/* Replies: each level is indented, up to the cap (spec 4.4, D-6) */
+.comment-list--replies {
+  margin-block-start: var(--space-md);
+  padding-inline-start: var(--indent-step);
+}
+
+.comment-list--flat {
+  padding-inline-start: 0;
 }
 
 /* Empty state */

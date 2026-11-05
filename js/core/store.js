@@ -46,6 +46,10 @@ export class Store {
 
   setUser(user) {
     this.#state.currentUser = user;
+    // A guest cannot have a reply box open.
+    if (!user) {
+      this.#state.ui.replyTargetId = null;
+    }
     this.#bus.emit(STORE_EVENTS.userChanged, user);
   }
 
@@ -67,6 +71,17 @@ export class Store {
 
   closeModal() {
     this.#state.ui.modal = null;
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
+  /** Opens the reply box under one comment; only one is open at a time. */
+  openReply(commentId) {
+    this.#state.ui.replyTargetId = commentId;
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
+  closeReply() {
+    this.#state.ui.replyTargetId = null;
     this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
   }
 
