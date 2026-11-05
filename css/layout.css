@@ -1,0 +1,36 @@
+/* A percentage, not 70vw: vw includes the scrollbar and would cause horizontal scrolling. */
+.container {
+  width: 70%;
+  margin-inline: auto;
+}
+
+.site-header {
+  background-color: var(--color-white);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.site-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-block: var(--space-md);
+}
+
+.site-header__title {
+  font-size: 1.6rem;
+  color: var(--color-reply);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding-block: var(--space-xl);
+}
+
+.composer:empty,
+.comments:empty {
+  display: none;
+}

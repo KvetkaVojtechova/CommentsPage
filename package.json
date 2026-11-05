@@ -1,0 +1,27 @@
+{
+  "name": "comments-page",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A simple threaded comments page in pure HTML, CSS and JavaScript.",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || ^22.13.0 || >=24"
+  },
+  "scripts": {
+    "serve": "serve .",
+    "test": "node --test",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "serve": "^14.2.5"
+  },
+  "overrides": {
+    "compression": "^1.8.2"
+  }
+}

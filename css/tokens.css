@@ -1,0 +1,32 @@
+:root {
+  /* Colours from the assignment (UI-02, UI-05 to UI-07) */
+  --color-bg: #f5f5f5;
+  --color-white: #ffffff;
+  --color-reply: #00325a;
+  --color-add: #de5050;
+  --color-blocked: #ff8300;
+
+  --color-text: #1f2933;
+  --color-text-muted: #5f6b76;
+  --color-border: #e1e4e8;
+
+  --font-family: 'Lucida Handwriting', 'Segoe Script', 'Bradley Hand', 'Apple Chancery', cursive;
+  --font-size-base: 18px;
+  --line-height: 1.5;
+
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-pill: 999px;
+
+  /* Spacing, not a layout width (D-6) */
+  --indent-step: 40px;
+
+  --focus-ring: 3px solid var(--color-reply);
+  --transition-fast: 150ms ease;
+}

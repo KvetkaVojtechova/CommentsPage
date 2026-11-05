@@ -1,0 +1,99 @@
+/* Buttons: colours swap on hover and keyboard focus (UI-05, UI-06) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid currentColor;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-white);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn--reply {
+  border-color: var(--color-reply);
+  color: var(--color-reply);
+}
+
+.btn--reply:hover:not(:disabled),
+.btn--reply:focus-visible {
+  background-color: var(--color-reply);
+  color: var(--color-white);
+}
+
+.btn--add {
+  border-color: var(--color-add);
+  color: var(--color-add);
+}
+
+.btn--add:hover:not(:disabled),
+.btn--add:focus-visible {
+  background-color: var(--color-add);
+  color: var(--color-white);
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xl) var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-white);
+  text-align: center;
+}
+
+.empty-state__image {
+  width: min(10rem, 60%);
+  margin-block-end: var(--space-sm);
+}
+
+.empty-state__title {
+  font-size: 1.3rem;
+  color: var(--color-reply);
+}
+
+.empty-state__text {
+  color: var(--color-text-muted);
+}
+
+/* Startup notice: hidden at first so it does not flash before main.js removes it. */
+.startup-notice {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--color-reply);
+  border-radius: var(--radius-md);
+  background-color: var(--color-white);
+  color: var(--color-reply);
+  visibility: hidden;
+  animation: reveal 0s 1.5s forwards;
+}
+
+.startup-notice--visible {
+  visibility: visible;
+  animation: none;
+}
+
+@keyframes reveal {
+  to {
+    visibility: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <title>Comments</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container site-header__inner">
+        <h1 class="site-header__title">Comments Page</h1>
+      </div>
+    </header>
+
+    <main class="container page">
+      <!-- Browsers do not run module scripts from file://, so this fallback lives in the HTML.
+           CSS reveals it after a short delay; main.js removes it once the page starts. -->
+      <p class="startup-notice" role="alert" data-startup-notice>
+        Please open this page through a local server or the live link (see README).
+      </p>
+
+      <section class="composer" aria-label="Write a comment" data-composer></section>
+      <section class="comments" aria-label="Comments" data-comments></section>
+    </main>
+  </body>
+</html>
