@@ -14,6 +14,8 @@
   --color-input-border: #8a949e;
   --color-error: #b3261e;
   --color-error-bg: #fdecea;
+  --color-warning: #a14a00;
+  --color-toast: #1f2933;
   --color-backdrop: rgb(0 0 0 / 0.45);
 
   --font-family: 'Lucida Handwriting', 'Segoe Script', 'Bradley Hand', 'Apple Chancery', cursive;

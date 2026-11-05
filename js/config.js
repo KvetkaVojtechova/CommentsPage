@@ -10,7 +10,8 @@ export const STORAGE_KEYS = Object.freeze({
 export const LIMITS = Object.freeze({
   username: Object.freeze({ min: 3, max: 20 }),
   password: Object.freeze({ min: 12, max: 128 }),
-  comment: Object.freeze({ min: 1, max: 500 }),
+  // The counter turns to the warning colour from `warnAt` characters.
+  comment: Object.freeze({ min: 1, max: 500, warnAt: 450 }),
 });
 
 export const PBKDF2 = Object.freeze({
@@ -40,6 +41,7 @@ export const UI = Object.freeze({
   repliesPreview: 3,
   continueThreadAfter: 10,
   timeRefreshMs: 60_000,
+  toastMs: 3_000,
 });
 
 export const ASSETS = Object.freeze({

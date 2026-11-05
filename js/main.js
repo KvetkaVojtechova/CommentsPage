@@ -16,6 +16,8 @@ import { AuthModalView } from './views/authModalView.js';
 import { ComposerView } from './views/composerView.js';
 import { CommentTreeView } from './views/commentTreeView.js';
 import { EmptyStateView } from './views/emptyStateView.js';
+import { ToastView } from './views/toastView.js';
+import { attachKeyRepeatGuard } from './utils/blockKeyRepeat.js';
 
 // A startup probe only; all other storage access goes through the data layer.
 function canUseStorage() {
@@ -103,6 +105,8 @@ async function start() {
     clearFocus: () => commentController.clearFocus(),
   });
   new EmptyStateView({ commentsRoot, composerRoot }, store);
+  new ToastView(document.body, store);
+  attachKeyRepeatGuard(document.querySelector('main'), 'textarea[data-comment-input]');
 
   await authController.restore();
   await commentController.load();

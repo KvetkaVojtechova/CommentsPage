@@ -33,6 +33,9 @@ export const MESSAGES = Object.freeze({
     continueThread: 'Continue this thread →',
     backToAll: '← Back to all comments',
   }),
+  toast: Object.freeze({
+    commentPosted: 'Comment posted',
+  }),
   time: Object.freeze({
     justNow: 'just now',
   }),

@@ -159,8 +159,12 @@ export class ComposerView {
     }
   }
 
+  // Enter adds a new line; Ctrl+Enter (Cmd+Enter on a Mac) submits (D-5).
   #onKeydown(event) {
-    if (this.#isReply && event.key === 'Escape') {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      this.#form.requestSubmit();
+    } else if (this.#isReply && event.key === 'Escape') {
       event.preventDefault();
       this.#handlers.cancel();
     }
@@ -193,7 +197,9 @@ export class ComposerView {
   // Add Comment stays disabled while the text is empty or only whitespace (FR-25), and while
   // the check runs, so a double click cannot post twice (FR-37).
   #renderState() {
-    this.#counter.textContent = MESSAGES.composer.counter(this.#input.value.length);
+    const { length } = this.#input.value;
+    this.#counter.textContent = MESSAGES.composer.counter(length);
+    this.#counter.classList.toggle('composer__counter--warning', length >= LIMITS.comment.warnAt);
     this.#submit.disabled = this.#busy || normaliseCommentText(this.#input.value) === '';
     this.#submit.textContent = this.#busy
       ? MESSAGES.composer.checkingButton
