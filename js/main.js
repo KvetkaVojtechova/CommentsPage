@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from './config.js';
+import { STORAGE_KEYS, UI } from './config.js';
 import { MESSAGES } from './messages.js';
 import { EventBus } from './core/eventBus.js';
 import { Store } from './core/store.js';
@@ -93,15 +93,20 @@ async function start() {
     clearError: (parentId) => commentController.clearError(parentId),
   };
   new ComposerView(composerRoot, store, commentHandlers);
-  new CommentTreeView(commentsRoot, store, {
+  const commentTreeView = new CommentTreeView(commentsRoot, store, {
     ...commentHandlers,
     openReply: (commentId) => commentController.openReply(commentId),
     cancelReply: () => commentController.cancelReply(),
+    toggleThread: (commentId) => commentController.toggleThread(commentId),
+    showAllReplies: (commentId) => commentController.showAllReplies(commentId),
+    focusThread: (commentId) => commentController.focusThread(commentId),
+    clearFocus: () => commentController.clearFocus(),
   });
   new EmptyStateView({ commentsRoot, composerRoot }, store);
 
   await authController.restore();
   await commentController.load();
+  setInterval(() => commentTreeView.refreshTimes(), UI.timeRefreshMs);
 }
 
 start().catch((error) => console.error('The page could not start:', error));

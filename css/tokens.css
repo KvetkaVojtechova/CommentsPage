@@ -10,6 +10,7 @@
   --color-text: #1f2933;
   --color-text-muted: #5f6b76;
   --color-border: #e1e4e8;
+  --color-thread: #c8ced5;
   --color-input-border: #8a949e;
   --color-error: #b3261e;
   --color-error-bg: #fdecea;
@@ -31,6 +32,9 @@
 
   /* Spacing, not a layout width (D-6) */
   --indent-step: 40px;
+  --avatar-size: 2.2rem;
+  --content-indent: calc(var(--avatar-size) + var(--space-sm));
+  --thread-line: 2px solid var(--color-thread);
 
   --icon-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/%3E%3Cpath d='M12 9v4M12 17h.01'/%3E%3C/svg%3E");
 

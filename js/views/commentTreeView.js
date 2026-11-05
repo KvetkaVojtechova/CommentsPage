@@ -1,21 +1,51 @@
 import { UI } from '../config.js';
 import { STORE_EVENTS } from '../core/store.js';
+import { MESSAGES } from '../messages.js';
 import { buildCommentTree } from '../utils/buildCommentTree.js';
 import { el } from '../utils/dom.js';
-import { createCommentElement } from './commentView.js';
+import { createCommentElement, refreshTime } from './commentView.js';
 import { ComposerView } from './composerView.js';
+
+/** Finds the node of one comment in the tree, for "Continue this thread". */
+function findTreeNode(nodes, commentId) {
+  for (const node of nodes) {
+    if (node.comment.id === commentId) {
+      return node;
+    }
+    const found = findTreeNode(node.children, commentId);
+    if (found) {
+      return found;
+    }
+  }
+  return null;
+}
 
 /**
  * The comment tree as nested lists, one card per top-level comment and its replies.
- * A Map from comment id to its elements lets a new comment or the reply box be placed
- * without searching the page or drawing everything again (SEC-03).
+ * A Map from comment id to its elements lets a new comment, the reply box or a collapse be
+ * applied in place, without searching the page or drawing everything again (SEC-03).
+ *
+ * Large threads stay readable (spec 4.4, D-14): replies can be hidden, only the first few
+ * replies of a comment are shown at first, replies from level 6 say whom they answer, and
+ * a branch deeper than level 10 opens on its own.
  */
 export class CommentTreeView {
   #store;
   #handlers;
   #list;
-  /** @type {Map<string, { item: HTMLElement, article: HTMLElement, replyButton: HTMLElement | null, depth: number, replies: HTMLElement | null }>} */
+  #backButton;
+  /**
+   * @type {Map<string, {
+   *   comment: object, item: HTMLElement, article: HTMLElement, actions: HTMLElement,
+   *   replyButton: HTMLElement | null, time: HTMLTimeElement, depth: number,
+   *   replies: HTMLElement | null, toggle: HTMLElement | null, more: HTMLElement | null,
+   *   continueButton: HTMLElement | null, hiddenChildren: object[], descendantCount: number,
+   * }>}
+   */
   #nodes = new Map();
+  // Replies posted on this page stay visible even beyond the first few.
+  #postedHere = new Set();
+  #focusId = null;
   #replyBox = null;
   #replySlot = null;
   #replyTargetId = null;
@@ -28,71 +58,253 @@ export class CommentTreeView {
    *   cancelReply: () => void,
    *   submit: (parentId: string | null, text: string) => Promise<boolean>,
    *   clearError: (parentId: string | null) => void,
+   *   toggleThread: (commentId: string) => void,
+   *   showAllReplies: (commentId: string) => void,
+   *   focusThread: (commentId: string) => void,
+   *   clearFocus: () => void,
    * }} handlers
    */
   constructor(root, store, handlers) {
     this.#store = store;
     this.#handlers = handlers;
     this.#list = el('ul', { className: 'comment-list' });
+    this.#backButton = el('button', {
+      className: 'btn btn--link comments__back',
+      text: MESSAGES.thread.backToAll,
+      attrs: { type: 'button' },
+      on: { click: () => handlers.clearFocus() },
+    });
     root.append(this.#list);
 
     store.on(STORE_EVENTS.commentsLoaded, () => this.render());
     // Reply buttons and "You" labels depend on who is logged in.
     store.on(STORE_EVENTS.userChanged, () => this.render());
     store.on(STORE_EVENTS.commentAdded, (comment) => this.#insert(comment));
-    store.on(STORE_EVENTS.uiChanged, () => this.#renderReplyBox());
+    store.on(STORE_EVENTS.uiChanged, () => this.#onUiChanged());
   }
 
   render() {
+    const { comments, ui } = this.#store.state;
     this.#closeReplyBox({ restoreFocus: false });
     this.#nodes.clear();
-    const tree = buildCommentTree(this.#store.state.comments);
-    this.#list.replaceChildren(...tree.map((node) => this.#renderNode(node)));
+
+    const tree = buildCommentTree(comments);
+    const focused = ui.focusId ? findTreeNode(tree, ui.focusId) : null;
+    this.#focusId = focused ? ui.focusId : null;
+
+    if (focused) {
+      const parent = comments.find((comment) => comment.id === focused.comment.parentId);
+      this.#list.before(this.#backButton);
+      this.#list.replaceChildren(this.#renderNode(focused, 0, parent?.authorName ?? null));
+    } else {
+      this.#backButton.remove();
+      this.#list.replaceChildren(...tree.map((node) => this.#renderNode(node, 0, null)));
+    }
     this.#renderReplyBox();
   }
 
-  #renderNode({ comment, depth, children }) {
-    const item = this.#createItem(comment, depth);
-    for (const child of children) {
-      this.#repliesOf(comment.id).append(this.#renderNode(child));
+  /** Updates every "40 min ago"; called once a minute. */
+  refreshTimes(now = new Date()) {
+    for (const node of this.#nodes.values()) {
+      refreshTime(node.time, now);
     }
-    return item;
   }
 
-  #createItem(comment, depth) {
-    const { element, replyButton } = createCommentElement(comment, this.#store.state.currentUser, {
+  #renderNode(treeNode, depth, replyingTo) {
+    const node = this.#createNode(treeNode.comment, depth, replyingTo);
+    node.descendantCount = treeNode.descendantCount;
+    this.#renderChildren(node, treeNode.children);
+    return node.item;
+  }
+
+  #createNode(comment, depth, replyingTo) {
+    const parts = createCommentElement(comment, this.#store.state.currentUser, {
       onReply: () => this.#handlers.openReply(comment.id),
+      replyingTo,
     });
     const item = el('li', { className: depth === 0 ? 'comment-thread' : 'comment-reply' }, [
-      element,
+      parts.element,
     ]);
-    this.#nodes.set(comment.id, { item, article: element, replyButton, depth, replies: null });
-    return item;
+    const node = {
+      comment,
+      item,
+      article: parts.element,
+      actions: parts.actions,
+      replyButton: parts.replyButton,
+      time: parts.time,
+      depth,
+      replies: null,
+      toggle: null,
+      more: null,
+      continueButton: null,
+      hiddenChildren: [],
+      descendantCount: 0,
+    };
+    this.#nodes.set(comment.id, node);
+    return node;
   }
 
-  /** The list of replies under a comment, created when the first reply arrives. */
-  #repliesOf(commentId) {
-    const node = this.#nodes.get(commentId);
+  /** From level 6 on, the indentation stops growing, so a reply names the comment it answers. */
+  #replyingToFor(parent) {
+    return parent.depth + 1 >= UI.indentCapLevel ? parent.comment.authorName : null;
+  }
+
+  #renderChildren(node, children) {
+    if (children.length === 0) {
+      return;
+    }
+    if (node.depth >= UI.continueThreadAfter) {
+      this.#addContinueButton(node);
+      return;
+    }
+
+    const showAll = this.#store.state.ui.expanded.has(node.comment.id);
+    const first = showAll ? children : children.slice(0, UI.repliesPreview);
+    const rest = showAll ? [] : children.slice(UI.repliesPreview);
+    const list = this.#repliesOf(node);
+
+    list.append(...first.map((child) => this.#renderChild(node, child)));
+    node.hiddenChildren = rest.filter((child) => !this.#postedHere.has(child.comment.id));
+    if (node.hiddenChildren.length > 0) {
+      this.#addMoreButton(node);
+    }
+    for (const child of rest.filter((child) => this.#postedHere.has(child.comment.id))) {
+      list.append(this.#renderChild(node, child));
+    }
+    this.#renderToggle(node);
+  }
+
+  #renderChild(parent, child) {
+    return this.#renderNode(child, parent.depth + 1, this.#replyingToFor(parent));
+  }
+
+  /** The list of replies under a comment, with its "Hide replies" button. */
+  #repliesOf(node) {
     if (!node.replies) {
       const isFlat = node.depth + 1 > UI.indentCapLevel;
       node.replies = el('ul', {
         className: `comment-list comment-list--replies${isFlat ? ' comment-list--flat' : ''}`,
       });
       node.item.append(node.replies);
+      node.toggle = el('button', {
+        className: 'btn btn--link comment__toggle',
+        attrs: { type: 'button' },
+        on: { click: () => this.#handlers.toggleThread(node.comment.id) },
+      });
+      node.actions.append(node.toggle);
     }
     return node.replies;
+  }
+
+  #renderToggle(node) {
+    if (!node.toggle) {
+      return;
+    }
+    const collapsed = this.#store.state.ui.collapsed.has(node.comment.id);
+    node.replies.hidden = collapsed;
+    node.toggle.setAttribute('aria-expanded', String(!collapsed));
+    node.toggle.textContent = collapsed
+      ? MESSAGES.thread.showReplies(node.descendantCount)
+      : MESSAGES.thread.hideReplies;
+  }
+
+  #addMoreButton(node) {
+    const hiddenCount = node.hiddenChildren.reduce(
+      (sum, child) => sum + 1 + child.descendantCount,
+      0,
+    );
+    node.more = el('li', { className: 'comment-more' }, [
+      el('button', {
+        className: 'btn btn--link',
+        text: MESSAGES.thread.showMoreReplies(hiddenCount),
+        attrs: { type: 'button' },
+        on: { click: () => this.#handlers.showAllReplies(node.comment.id) },
+      }),
+    ]);
+    node.replies.append(node.more);
+  }
+
+  // Draws the hidden replies where the "Show N more replies" button was.
+  #revealHiddenReplies(node) {
+    const hadFocus = node.more.contains(document.activeElement);
+    const items = node.hiddenChildren.map((child) => this.#renderChild(node, child));
+    node.more.replaceWith(...items);
+    node.more = null;
+    node.hiddenChildren = [];
+    // Keyboard users continue at the first reply that was hidden.
+    if (hadFocus) {
+      items[0]?.querySelector('button')?.focus();
+    }
+  }
+
+  #addContinueButton(node) {
+    if (node.continueButton) {
+      return;
+    }
+    node.continueButton = el('button', {
+      className: 'btn btn--link',
+      text: MESSAGES.thread.continueThread,
+      attrs: { type: 'button' },
+      on: { click: () => this.#handlers.focusThread(node.comment.id) },
+    });
+    node.actions.append(node.continueButton);
   }
 
   // Inserts one new comment in place: a top-level comment first, a reply last under its parent.
   #insert(comment) {
     if (comment.parentId === null) {
-      this.#list.prepend(this.#createItem(comment, 0));
+      if (!this.#focusId) {
+        this.#list.prepend(this.#createNode(comment, 0, null).item);
+      }
       return;
     }
     const parent = this.#nodes.get(comment.parentId);
-    if (parent && parent.depth < UI.maxDepth) {
-      this.#repliesOf(comment.parentId).append(this.#createItem(comment, parent.depth + 1));
+    if (!parent) {
+      return;
     }
+    this.#postedHere.add(comment.id);
+    this.#countNewReply(parent);
+    if (parent.depth >= UI.continueThreadAfter) {
+      this.#addContinueButton(parent);
+      return;
+    }
+    const child = this.#createNode(comment, parent.depth + 1, this.#replyingToFor(parent));
+    this.#repliesOf(parent).append(child.item);
+    this.#renderToggle(parent);
+  }
+
+  /** Keeps "Show N replies" right on the parent and every comment above it. */
+  #countNewReply(parent) {
+    for (let node = parent; node; node = this.#nodes.get(node.comment.parentId)) {
+      node.descendantCount += 1;
+      this.#renderToggle(node);
+    }
+  }
+
+  #onUiChanged() {
+    const { ui } = this.#store.state;
+    if (ui.focusId !== this.#focusId) {
+      const previousFocus = this.#focusId;
+      this.render();
+      this.#moveFocusAfterThreadChange(previousFocus);
+      return;
+    }
+    for (const node of this.#nodes.values()) {
+      this.#renderToggle(node);
+      if (node.more && ui.expanded.has(node.comment.id)) {
+        this.#revealHiddenReplies(node);
+      }
+    }
+    this.#renderReplyBox();
+  }
+
+  // After "Continue this thread" focus moves to "Back"; after "Back", to where the user was.
+  #moveFocusAfterThreadChange(previousFocus) {
+    const target = this.#focusId
+      ? this.#backButton
+      : this.#nodes.get(previousFocus)?.continueButton;
+    target?.focus();
+    target?.scrollIntoView({ block: 'center' });
   }
 
   #renderReplyBox() {

@@ -1,23 +1,23 @@
-import { UI } from '../config.js';
 import { MESSAGES } from '../messages.js';
 import { el } from '../utils/dom.js';
-
-const dateTimeFormat = new Intl.DateTimeFormat(UI.locale, {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-});
+import { fullDateTime, relativeTime } from '../utils/formatTime.js';
 
 /**
- * One comment: avatar, author, a "You" label on the user's own comments, time, text and,
- * for logged-in users, a Reply button.
+ * One comment: avatar, author, a "You" label on the user's own comments, the time, for deep
+ * replies the name it answers, the text, and an actions row (Reply for logged-in users).
  * All stored values are inserted as text only, so a comment can never run code (SEC-01).
  * @param {{ authorId: string, authorName: string, text: string, createdAt: string }} comment
  * @param {{ id: string } | null} currentUser
- * @param {{ onReply: () => void }} handlers
- * @returns {{ element: HTMLElement, replyButton: HTMLButtonElement | null }}
+ * @param {{ onReply: () => void, replyingTo?: string | null, now?: Date }} options
+ * @returns {{ element: HTMLElement, actions: HTMLElement, replyButton: HTMLButtonElement | null, time: HTMLTimeElement }}
  */
-export function createCommentElement(comment, currentUser, { onReply }) {
+export function createCommentElement(comment, currentUser, { onReply, replyingTo = null, now }) {
   const isOwn = comment.authorId === currentUser?.id;
+  const time = el('time', {
+    className: 'comment__time',
+    text: relativeTime(comment.createdAt, now),
+    attrs: { datetime: comment.createdAt, title: fullDateTime(comment.createdAt) },
+  });
   const replyButton = currentUser
     ? el('button', {
         className: 'btn btn--reply',
@@ -26,6 +26,7 @@ export function createCommentElement(comment, currentUser, { onReply }) {
         on: { click: onReply },
       })
     : null;
+  const actions = el('div', { className: 'comment__actions' }, replyButton ? [replyButton] : []);
 
   const element = el('article', { className: 'comment' }, [
     el('header', { className: 'comment__header' }, [
@@ -36,15 +37,24 @@ export function createCommentElement(comment, currentUser, { onReply }) {
       }),
       el('span', { className: 'comment__author', text: comment.authorName }),
       ...(isOwn ? [el('span', { className: 'comment__badge', text: MESSAGES.comment.you })] : []),
-      el('time', {
-        className: 'comment__time',
-        text: dateTimeFormat.format(new Date(comment.createdAt)),
-        attrs: { datetime: comment.createdAt },
-      }),
+      time,
     ]),
+    ...(replyingTo
+      ? [
+          el('p', { className: 'comment__replying-to' }, [
+            el('span', { text: '↳ ', attrs: { 'aria-hidden': 'true' } }),
+            MESSAGES.comment.replyingTo(replyingTo),
+          ]),
+        ]
+      : []),
     el('p', { className: 'comment__text', text: comment.text }),
-    ...(replyButton ? [el('div', { className: 'comment__actions' }, [replyButton])] : []),
+    actions,
   ]);
 
-  return { element, replyButton };
+  return { element, actions, replyButton, time };
+}
+
+/** Updates a comment's relative time ("40 min ago") without drawing it again. */
+export function refreshTime(time, now) {
+  time.textContent = relativeTime(time.dateTime, now);
 }

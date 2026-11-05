@@ -94,4 +94,32 @@ describe('Store', () => {
 
     assert.equal(store.state.ui.replyTargetId, null);
   });
+
+  it('toggleCollapsed hides and shows the replies of a comment', () => {
+    const store = new Store();
+    const events = recordEvents(store);
+
+    store.toggleCollapsed('c1');
+    assert.equal(store.state.ui.collapsed.has('c1'), true);
+    store.toggleCollapsed('c1');
+    assert.equal(store.state.ui.collapsed.has('c1'), false);
+    assert.equal(events.length, 2);
+  });
+
+  it('showAllReplies, focusThread and clearFocus update the UI state', () => {
+    const store = new Store();
+    const events = recordEvents(store);
+
+    store.showAllReplies('c1');
+    store.focusThread('c2');
+    assert.equal(store.state.ui.expanded.has('c1'), true);
+    assert.equal(store.state.ui.focusId, 'c2');
+    store.clearFocus();
+    assert.equal(store.state.ui.focusId, null);
+
+    assert.deepEqual(
+      events.map((event) => event.type),
+      [STORE_EVENTS.uiChanged, STORE_EVENTS.uiChanged, STORE_EVENTS.uiChanged],
+    );
+  });
 });

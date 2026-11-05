@@ -40,6 +40,10 @@ export class CommentController {
       const comment = await this.#comments.add({ parentId, text });
       if (parentId) {
         this.#store.closeReply();
+        // A reply to a collapsed comment opens its replies, so the new reply is visible.
+        if (this.#store.state.ui.collapsed.has(parentId)) {
+          this.#store.toggleCollapsed(parentId);
+        }
       }
       this.#store.addComment(comment);
       return true;
@@ -57,6 +61,22 @@ export class CommentController {
   cancelReply() {
     this.#clearReplyError();
     this.#store.closeReply();
+  }
+
+  toggleThread(commentId) {
+    this.#store.toggleCollapsed(commentId);
+  }
+
+  showAllReplies(commentId) {
+    this.#store.showAllReplies(commentId);
+  }
+
+  focusThread(commentId) {
+    this.#store.focusThread(commentId);
+  }
+
+  clearFocus() {
+    this.#store.clearFocus();
   }
 
   clearError(parentId) {

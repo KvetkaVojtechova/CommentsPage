@@ -24,6 +24,17 @@ export const MESSAGES = Object.freeze({
   comment: Object.freeze({
     you: 'You',
     reply: 'Reply',
+    replyingTo: (name) => `replying to ${name}`,
+  }),
+  thread: Object.freeze({
+    hideReplies: 'Hide replies',
+    showReplies: (count) => `Show ${count} ${count === 1 ? 'reply' : 'replies'}`,
+    showMoreReplies: (count) => `Show ${count} more ${count === 1 ? 'reply' : 'replies'}`,
+    continueThread: 'Continue this thread →',
+    backToAll: '← Back to all comments',
+  }),
+  time: Object.freeze({
+    justNow: 'just now',
   }),
   startup: Object.freeze({
     fileProtocol: 'Please open this page through a local server or the live link (see README).',

@@ -35,6 +35,11 @@ export const UI = Object.freeze({
   indentCapLevel: 6,
   // Deeper replies are not drawn; this also stops broken data that loops (spec 5.3).
   maxDepth: 50,
+  // Large threads (D-14): replies shown before "Show N more replies", and the level below
+  // which a branch opens on its own via "Continue this thread".
+  repliesPreview: 3,
+  continueThreadAfter: 10,
+  timeRefreshMs: 60_000,
 });
 
 export const ASSETS = Object.freeze({

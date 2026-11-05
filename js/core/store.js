@@ -85,6 +85,34 @@ export class Store {
     this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
   }
 
+  /** Hides or shows all replies under a comment. */
+  toggleCollapsed(commentId) {
+    const { collapsed } = this.#state.ui;
+    if (collapsed.has(commentId)) {
+      collapsed.delete(commentId);
+    } else {
+      collapsed.add(commentId);
+    }
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
+  /** Shows the replies hidden behind "Show N more replies". */
+  showAllReplies(commentId) {
+    this.#state.ui.expanded.add(commentId);
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
+  /** Shows only the branch that starts at this comment ("Continue this thread"). */
+  focusThread(commentId) {
+    this.#state.ui.focusId = commentId;
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
+  clearFocus() {
+    this.#state.ui.focusId = null;
+    this.#bus.emit(STORE_EVENTS.uiChanged, this.#state.ui);
+  }
+
   /**
    * @param {string} key Where the message belongs, e.g. "auth.username".
    * @param {string} message
