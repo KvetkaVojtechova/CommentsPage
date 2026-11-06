@@ -20,6 +20,16 @@ function findTreeNode(nodes, commentId) {
   return null;
 }
 
+// Broken stored data is left out of the tree (FR-27); the console says so.
+function warnAboutHiddenComments(comments, tree) {
+  const shown = tree.reduce((sum, node) => sum + 1 + node.descendantCount, 0);
+  if (shown < comments.length) {
+    console.warn(
+      `${comments.length - shown} stored comment(s) are not shown: their parent is missing, they form a loop or they are nested too deeply.`,
+    );
+  }
+}
+
 /**
  * The comment tree as nested lists, one card per top-level comment and its replies.
  * A Map from comment id to its elements lets a new comment, the reply box or a collapse be
@@ -83,9 +93,16 @@ export class CommentTreeView {
     store.on(STORE_EVENTS.uiChanged, () => this.#onUiChanged());
   }
 
+  /**
+   * Draws the whole tree, e.g. after another tab saved a comment. An open reply box is moved
+   * over with its draft and focus, and the comment at the top of the screen stays in place.
+   */
   render() {
     const { comments, ui } = this.#store.state;
-    this.#closeReplyBox({ restoreFocus: false });
+    const anchor = this.#findScrollAnchor();
+    const focusedInput = this.#replySlot?.contains(document.activeElement)
+      ? document.activeElement
+      : null;
     this.#nodes.clear();
 
     const tree = buildCommentTree(comments);
@@ -99,8 +116,12 @@ export class CommentTreeView {
     } else {
       this.#backButton.remove();
       this.#list.replaceChildren(...tree.map((node) => this.#renderNode(node, 0, null)));
+      warnAboutHiddenComments(comments, tree);
     }
+
+    this.#keepReplyBox(focusedInput);
     this.#renderReplyBox();
+    this.#restoreScroll(anchor);
   }
 
   /** Updates every "40 min ago"; called once a minute. */
@@ -108,6 +129,39 @@ export class CommentTreeView {
     for (const node of this.#nodes.values()) {
       refreshTime(node.time, now);
     }
+  }
+
+  // The first comment visible at the top of the screen and where it is. At the very top of
+  // the page there is no anchor, so new comments there come into view.
+  #findScrollAnchor() {
+    if (window.scrollY === 0) {
+      return null;
+    }
+    for (const [id, node] of this.#nodes) {
+      const { top, bottom } = node.article.getBoundingClientRect();
+      if (bottom > 0) {
+        return { id, top };
+      }
+    }
+    return null;
+  }
+
+  #restoreScroll(anchor) {
+    const article = anchor && this.#nodes.get(anchor.id)?.article;
+    if (article) {
+      window.scrollBy(0, article.getBoundingClientRect().top - anchor.top);
+    }
+  }
+
+  #keepReplyBox(focusedInput) {
+    const node = this.#nodes.get(this.#replyTargetId);
+    if (!node) {
+      this.#closeReplyBox({ restoreFocus: false });
+      return;
+    }
+    node.article.after(this.#replySlot);
+    node.replyButton?.setAttribute('aria-expanded', 'true');
+    focusedInput?.focus({ preventScroll: true });
   }
 
   #renderNode(treeNode, depth, replyingTo) {

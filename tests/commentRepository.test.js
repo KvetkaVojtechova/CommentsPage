@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { STORAGE_KEYS } from '../js/config.js';
 import { CommentRepository } from '../js/data/commentRepository.js';
 import { MemoryStorageAdapter } from '../js/data/storageAdapter.js';
+import { buildCommentTree } from '../js/utils/buildCommentTree.js';
 import { storedComment } from './fixtures/comments.js';
 
 describe('CommentRepository', () => {
@@ -44,5 +45,40 @@ describe('CommentRepository', () => {
 
     storage.write(STORAGE_KEYS.comments, [storedComment(), { text: 42 }]);
     assert.deepEqual(await repository.getAll(), [storedComment()]);
+  });
+
+  it('builds a tree from stored data with a missing parent, a loop and a __proto__ key', async (t) => {
+    t.mock.method(console, 'warn', () => {});
+    const ids = ['a', 'b', 'c', 'd'].map(
+      (letter) => `${letter.repeat(8)}-1111-4111-8111-111111111111`,
+    );
+    const top = storedComment({ id: ids[0] });
+    const reply = storedComment({ id: ids[1], parentId: ids[0] });
+    const orphan = storedComment({
+      id: ids[2],
+      parentId: '9'.repeat(8) + '-1111-4111-8111-111111111111',
+    });
+    // c ↔ d answer each other, so neither is reachable from a top-level comment.
+    const loop = storedComment({ id: ids[3], parentId: ids[2] });
+    const storage = new MemoryStorageAdapter();
+    storage.writeRaw(
+      STORAGE_KEYS.comments,
+      JSON.stringify([top, reply, orphan, loop, { ...loop, id: ids[2], parentId: ids[3] }]).replace(
+        '{',
+        '{"__proto__": {"isAdmin": true}, ',
+      ),
+    );
+
+    const comments = await new CommentRepository(storage).getAll();
+    const tree = buildCommentTree(comments);
+
+    assert.equal(
+      comments.some((comment) => 'isAdmin' in comment),
+      false,
+    );
+    assert.deepEqual(
+      tree.map((node) => [node.comment.id, node.children.map((child) => child.comment.id)]),
+      [[ids[0], [ids[1]]]],
+    );
   });
 });

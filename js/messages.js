@@ -102,6 +102,7 @@ export const MESSAGES = Object.freeze({
     parentMissing: 'The comment you are replying to no longer exists.',
     commentEmpty: 'Please write a comment first.',
     commentTooLong: `A comment can have at most ${LIMITS.comment.max} characters.`,
+    commentNotSaved: 'Your comment could not be saved in this browser.',
     storageFailed: 'This browser could not save your data. Please allow site data and try again.',
     unexpected: 'Something went wrong. Please try again.',
   }),

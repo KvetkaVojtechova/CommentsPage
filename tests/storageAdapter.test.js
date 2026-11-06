@@ -2,27 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryStorageAdapter, WebStorageAdapter } from '../js/data/storageAdapter.js';
 import { StorageError } from '../js/core/errors.js';
-
-/** A minimal stand-in for window.localStorage. */
-class FakeStorage {
-  items = new Map();
-  failWrites = false;
-
-  getItem(key) {
-    return this.items.has(key) ? this.items.get(key) : null;
-  }
-
-  setItem(key, value) {
-    if (this.failWrites) {
-      throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
-    }
-    this.items.set(key, String(value));
-  }
-
-  removeItem(key) {
-    this.items.delete(key);
-  }
-}
+import { FakeStorage } from './fixtures/fakeStorage.js';
 
 describe('WebStorageAdapter', () => {
   it('writes values as JSON and reads them back', () => {

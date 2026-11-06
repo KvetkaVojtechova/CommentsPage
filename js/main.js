@@ -114,6 +114,13 @@ async function start() {
   await commentController.load();
   setInterval(() => commentTreeView.refreshTimes(), UI.timeRefreshMs);
   watchSession(authController, localStore);
+
+  // Another tab saved a comment or cleared the storage (null key): show the same tree.
+  localStore.onExternalChange((key) => {
+    if (key === null || key === STORAGE_KEYS.comments) {
+      commentController.load();
+    }
+  });
 }
 
 /**

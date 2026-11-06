@@ -1,10 +1,11 @@
 import { beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { ModerationError, PermissionError } from '../js/core/errors.js';
+import { ModerationError, PermissionError, StorageError } from '../js/core/errors.js';
 import { CommentRepository } from '../js/data/commentRepository.js';
-import { MemoryStorageAdapter } from '../js/data/storageAdapter.js';
+import { MemoryStorageAdapter, WebStorageAdapter } from '../js/data/storageAdapter.js';
 import { CommentService } from '../js/services/commentService.js';
 import { isIsoDate, isUuid } from '../js/utils/validators.js';
+import { FakeStorage } from './fixtures/fakeStorage.js';
 
 const ANNA = { id: '3f2b8c1e-4d5a-4b6c-8d7e-9f0a1b2c3d4e', username: 'Anna' };
 
@@ -137,5 +138,19 @@ describe('CommentService', () => {
 
     await assert.rejects(service.add({ text: 'Hello' }), PermissionError);
     assert.deepEqual(await repository.getAll(), []);
+  });
+
+  it('reports a full storage as a StorageError and saves nothing', async () => {
+    const storage = new FakeStorage();
+    const fullRepository = new CommentRepository(new WebStorageAdapter(storage));
+    const fullService = new CommentService({
+      commentRepository: fullRepository,
+      authService: { getCurrentUser: async () => ANNA },
+      moderationService: { check: async () => ({ blocked: false, words: [] }) },
+    });
+    storage.failWrites = true;
+
+    await assert.rejects(fullService.add({ text: 'Hello' }), StorageError);
+    assert.deepEqual(await fullRepository.getAll(), []);
   });
 });

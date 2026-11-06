@@ -1,4 +1,4 @@
-import { AppError, ModerationError, PermissionError } from '../core/errors.js';
+import { AppError, ModerationError, PermissionError, StorageError } from '../core/errors.js';
 import { MESSAGES } from '../messages.js';
 import { authErrorKey } from './authController.js';
 
@@ -95,6 +95,12 @@ export class CommentController {
     const key = commentErrorKey(parentId);
     if (error instanceof ModerationError && error.reason === 'blocked') {
       this.#store.setError(key, MESSAGES.errors.blockedWords(error.words), 'blocked');
+      return;
+    }
+    // Storage full or blocked: the comment is not saved and the text stays in the box.
+    if (error instanceof StorageError) {
+      console.error(error);
+      this.#store.setError(key, MESSAGES.errors.commentNotSaved);
       return;
     }
     if (!(error instanceof AppError)) {
