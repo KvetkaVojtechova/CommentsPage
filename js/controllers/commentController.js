@@ -1,5 +1,6 @@
-import { AppError, ModerationError } from '../core/errors.js';
+import { AppError, ModerationError, PermissionError } from '../core/errors.js';
 import { MESSAGES } from '../messages.js';
+import { authErrorKey } from './authController.js';
 
 /** The Store key for an error under a comment box: the top one, or the reply box of a comment. */
 export function commentErrorKey(parentId) {
@@ -84,6 +85,13 @@ export class CommentController {
   }
 
   #showError(parentId, error) {
+    // The session ended meanwhile (another tab, expiry): ask to log in again; the draft stays.
+    if (error instanceof PermissionError) {
+      this.#store.setUser(null);
+      this.#store.openModal('login');
+      this.#store.setError(authErrorKey('form'), MESSAGES.errors.loginRequired);
+      return;
+    }
     const key = commentErrorKey(parentId);
     if (error instanceof ModerationError && error.reason === 'blocked') {
       this.#store.setError(key, MESSAGES.errors.blockedWords(error.words), 'blocked');

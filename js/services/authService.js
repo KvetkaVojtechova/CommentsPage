@@ -6,7 +6,13 @@ import {
   validatePassword,
   validateUsername,
 } from '../utils/validators.js';
-import { dummyVerify, hashPassword, randomHex, verifyPassword } from './passwordHasher.js';
+import {
+  dummyVerify,
+  hashPassword,
+  randomHex,
+  sha256Hex,
+  verifyPassword,
+} from './passwordHasher.js';
 
 export function createUser({ username, passwordHash, salt }) {
   return {
@@ -117,19 +123,27 @@ export class AuthService {
     await this.#users.update({ ...user, passwordHash, salt });
   }
 
+  /** Ends this tab's session; other tabs of the same session notice through the storage event. */
   async logout() {
+    const session = await this.#sessions.getTabSession();
     await this.#sessions.clearTabSession();
+    if (session) {
+      await this.#sessions.removeRecord(await sha256Hex(session.token));
+    }
   }
 
-  /** The logged-in user of this tab, or null. The session is checked against storage on every call. */
+  /**
+   * The logged-in user of this tab, or null. On every call both parts of the session are
+   * checked, along with its expiry and the user, so an edited or expired session ends here.
+   */
   async getCurrentUser() {
-    const session = await this.#sessions.getTabSession();
-    if (!session) {
+    const record = await this.#validRecord();
+    if (!record) {
       return null;
     }
-    const user = await this.#users.findById(session.userId);
+    const user = await this.#users.findById(record.userId);
     if (!user) {
-      await this.#sessions.clearTabSession();
+      await this.logout();
       return null;
     }
     return toPublicUser(user);
@@ -137,11 +151,57 @@ export class AuthService {
 
   /** Called on page load: the session survives a reload in the same tab (FR-08). */
   async restoreSession() {
+    await this.#sessions.purgeExpired(this.#now());
     return this.getCurrentUser();
   }
 
+  /** Records activity, which keeps the session alive; written at most once a minute. */
+  async touch() {
+    const record = await this.#validRecord();
+    if (!record) {
+      return;
+    }
+    const expiresAt = this.#expiryFrom(this.#now(), record.createdAt);
+    if (expiresAt - record.expiresAt >= SESSION.activityWriteMs) {
+      await this.#sessions.saveRecord({ ...record, expiresAt });
+    }
+  }
+
   async #startSession(user) {
-    await this.#sessions.setTabSession({ userId: user.id, token: randomHex(SESSION.tokenBytes) });
+    const token = randomHex(SESSION.tokenBytes);
+    const now = this.#now();
+    await this.#sessions.saveRecord({
+      userId: user.id,
+      tokenHash: await sha256Hex(token),
+      createdAt: now,
+      expiresAt: this.#expiryFrom(now, now),
+    });
+    await this.#sessions.setTabSession({ userId: user.id, token });
     return toPublicUser(user);
+  }
+
+  // 30 minutes after the last activity, but never more than 8 hours after login.
+  #expiryFrom(lastActivity, createdAt) {
+    return Math.min(lastActivity + SESSION.idleMs, createdAt + SESSION.maxAgeMs);
+  }
+
+  /** The stored record of this tab's session, if the session is genuine and still valid. */
+  async #validRecord() {
+    const session = await this.#sessions.getTabSession();
+    if (!session) {
+      return null;
+    }
+    const record = await this.#sessions.findRecord(await sha256Hex(session.token));
+    const now = this.#now();
+    const isValid =
+      record !== null &&
+      record.userId === session.userId &&
+      now < record.expiresAt &&
+      now < record.createdAt + SESSION.maxAgeMs;
+    if (!isValid) {
+      await this.logout();
+      return null;
+    }
+    return record;
   }
 }

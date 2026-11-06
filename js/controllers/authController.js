@@ -32,6 +32,30 @@ export class AuthController {
     }
   }
 
+  /**
+   * Checks the session again: after another tab logged out, the stored data changed or time
+   * passed. Logs this tab out if the session is no longer valid.
+   */
+  async recheck() {
+    try {
+      const user = await this.#auth.getCurrentUser();
+      if (user?.id !== this.#store.state.currentUser?.id) {
+        this.#store.setUser(user);
+      }
+    } catch (error) {
+      console.error('Could not check the session:', error);
+    }
+  }
+
+  /** Activity on the page keeps the session alive. */
+  async touch() {
+    try {
+      await this.#auth.touch();
+    } catch (error) {
+      console.error('Could not record activity:', error);
+    }
+  }
+
   /** @param {'login' | 'register'} [mode] */
   openAuth(mode = 'login') {
     this.#clearErrors();

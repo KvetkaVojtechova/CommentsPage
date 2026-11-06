@@ -73,6 +73,22 @@ export function parseLoginAttempt(raw) {
   return isValid ? { usernameKey, failures, lockLevel, lockedUntil } : null;
 }
 
+const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+
+export function parseSessionRecord(raw) {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const { userId, tokenHash, createdAt, expiresAt } = raw;
+  const isValid =
+    isUuid(userId) &&
+    typeof tokenHash === 'string' &&
+    SHA256_PATTERN.test(tokenHash) &&
+    isCount(createdAt) &&
+    isCount(expiresAt);
+  return isValid ? { userId, tokenHash, createdAt, expiresAt } : null;
+}
+
 export function parseTabSession(raw) {
   if (!isRecord(raw)) {
     return null;

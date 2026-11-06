@@ -1,6 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseComment, parseList, parseTabSession, parseUser } from '../js/data/schemas.js';
+import {
+  parseComment,
+  parseList,
+  parseSessionRecord,
+  parseTabSession,
+  parseUser,
+} from '../js/data/schemas.js';
 import { storedComment } from './fixtures/comments.js';
 import { storedUser } from './fixtures/users.js';
 
@@ -91,6 +97,24 @@ describe('parseTabSession', () => {
   it('rejects a bad userId or token', () => {
     assert.equal(parseTabSession({ ...valid, userId: 'x' }), null);
     assert.equal(parseTabSession({ ...valid, token: 'short' }), null);
+  });
+});
+
+describe('parseSessionRecord', () => {
+  const valid = {
+    userId: storedUser().id,
+    tokenHash: 'b'.repeat(64),
+    createdAt: 1_000,
+    expiresAt: 2_000,
+  };
+
+  it('accepts a valid record and drops extra fields', () => {
+    assert.deepEqual(parseSessionRecord({ ...valid, admin: true }), valid);
+  });
+
+  it('rejects a bad hash or time', () => {
+    assert.equal(parseSessionRecord({ ...valid, tokenHash: 'plain token' }), null);
+    assert.equal(parseSessionRecord({ ...valid, expiresAt: 'never' }), null);
   });
 });
 

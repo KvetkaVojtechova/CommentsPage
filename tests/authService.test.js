@@ -23,7 +23,7 @@ describe('AuthService', () => {
     clock = Date.parse('2026-11-06T10:00:00Z');
     auth = new AuthService({
       userRepository: new UserRepository(localStore),
-      sessionRepository: new SessionRepository(tabStore),
+      sessionRepository: new SessionRepository(tabStore, localStore),
       loginAttemptRepository: new LoginAttemptRepository(localStore),
       now: () => clock,
     });
@@ -191,5 +191,105 @@ describe('AuthService', () => {
     assert.notEqual(stored.salt, old.salt);
     await auth.logout();
     assert.deepEqual(await auth.login('Anna', PASSWORD), user);
+  });
+
+  describe('tamper-resistant sessions (SEC-29)', () => {
+    const MINUTE = 60_000;
+    let user;
+
+    beforeEach(async () => {
+      user = await auth.register('Anna', PASSWORD, PASSWORD);
+    });
+
+    const tabSession = () => tabStore.read(STORAGE_KEYS.session);
+    const records = () => localStore.read(STORAGE_KEYS.sessions) ?? [];
+
+    it('keeps the token in the tab and only its SHA-256 in localStorage', () => {
+      const [record] = records();
+
+      assert.deepEqual(Object.keys(tabSession()), ['userId', 'token']);
+      assert.deepEqual(Object.keys(record), ['userId', 'tokenHash', 'createdAt', 'expiresAt']);
+      assert.notEqual(record.tokenHash, tabSession().token);
+      const everything = JSON.stringify([tabSession(), records()]);
+      assert.equal(everything.includes(PASSWORD), false);
+      assert.equal(everything.includes('pbkdf2'), false);
+    });
+
+    it('logs out when the userId in sessionStorage is changed', async () => {
+      const annasSession = tabSession();
+      const other = await auth.register('Ben', PASSWORD, PASSWORD);
+      tabStore.write(STORAGE_KEYS.session, { ...annasSession, userId: other.id });
+
+      assert.equal(await auth.getCurrentUser(), null);
+      assert.equal(tabSession(), null);
+    });
+
+    it('logs out when the token is changed', async () => {
+      tabStore.write(STORAGE_KEYS.session, { ...tabSession(), token: 'a'.repeat(64) });
+
+      assert.equal(await auth.getCurrentUser(), null);
+    });
+
+    it('ends after 30 minutes without activity', async () => {
+      clock += 29 * MINUTE;
+      assert.deepEqual(await auth.getCurrentUser(), user);
+      clock += 2 * MINUTE;
+
+      assert.equal(await auth.getCurrentUser(), null);
+    });
+
+    it('stays alive with activity, written at most once a minute', async () => {
+      clock += 20 * MINUTE;
+      await auth.touch();
+      const afterFirstTouch = records()[0].expiresAt;
+      clock += 30_000;
+      await auth.touch();
+      assert.equal(records()[0].expiresAt, afterFirstTouch);
+
+      clock += 20 * MINUTE;
+      assert.deepEqual(await auth.getCurrentUser(), user);
+    });
+
+    it('ends after 8 hours even with activity', async () => {
+      for (let hour = 0; hour < 8 * 4; hour++) {
+        clock += 15 * MINUTE;
+        await auth.touch();
+      }
+
+      assert.equal(await auth.getCurrentUser(), null);
+    });
+
+    it('logs out when the user no longer exists', async () => {
+      localStore.write(STORAGE_KEYS.users, []);
+
+      assert.equal(await auth.getCurrentUser(), null);
+      assert.deepEqual(records(), []);
+    });
+
+    it('logout removes the record, so a copy of the tab is logged out too', async () => {
+      const copiedTab = new MemoryStorageAdapter();
+      copiedTab.write(STORAGE_KEYS.session, tabSession());
+      const otherTab = new AuthService({
+        userRepository: new UserRepository(localStore),
+        sessionRepository: new SessionRepository(copiedTab, localStore),
+        loginAttemptRepository: new LoginAttemptRepository(localStore),
+        now: () => clock,
+      });
+      assert.deepEqual(await otherTab.getCurrentUser(), user);
+
+      await auth.logout();
+
+      assert.deepEqual(records(), []);
+      assert.equal(await otherTab.getCurrentUser(), null);
+    });
+
+    it('removes expired records of closed tabs on the next page load', async () => {
+      tabStore.remove(STORAGE_KEYS.session);
+      clock += 31 * MINUTE;
+
+      await auth.restoreSession();
+
+      assert.deepEqual(records(), []);
+    });
   });
 });

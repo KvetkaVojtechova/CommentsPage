@@ -17,6 +17,7 @@ export class ComposerView {
   #handlers;
   #parentId;
   #busy = false;
+  #draftOwnerId = null;
   #unsubscribes = [];
 
   #form;
@@ -60,14 +61,19 @@ export class ComposerView {
 
   /** Shows or hides the top comment box for the current user. */
   render() {
-    if (this.#store.state.currentUser) {
-      this.#root.append(this.#form);
-    } else {
-      // A draft never carries over to the next person who logs in on this tab.
+    const user = this.#store.state.currentUser;
+    if (!user) {
+      // The draft stays, so it is still there if the same person logs in again.
       this.#form.remove();
+      return;
+    }
+    // A draft never carries over to a different person on this tab.
+    if (this.#draftOwnerId !== null && this.#draftOwnerId !== user.id) {
       this.#input.value = '';
       this.#renderState();
     }
+    this.#draftOwnerId = user.id;
+    this.#root.append(this.#form);
   }
 
   /** Removes a reply box and stops listening to the Store. */

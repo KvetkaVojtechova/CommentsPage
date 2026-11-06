@@ -1,4 +1,4 @@
-import { STORAGE_KEYS, UI } from './config.js';
+import { SESSION, STORAGE_KEYS, UI } from './config.js';
 import { MESSAGES } from './messages.js';
 import { EventBus } from './core/eventBus.js';
 import { Store } from './core/store.js';
@@ -64,7 +64,7 @@ async function start() {
   const localStore = new WebStorageAdapter(localStorage);
   const authService = new AuthService({
     userRepository: new UserRepository(localStore),
-    sessionRepository: new SessionRepository(new WebStorageAdapter(sessionStorage)),
+    sessionRepository: new SessionRepository(new WebStorageAdapter(sessionStorage), localStore),
     loginAttemptRepository: new LoginAttemptRepository(localStore),
   });
   const commentService = new CommentService({
@@ -113,6 +113,24 @@ async function start() {
   await authController.restore();
   await commentController.load();
   setInterval(() => commentTreeView.refreshTimes(), UI.timeRefreshMs);
+  watchSession(authController, localStore);
+}
+
+/**
+ * Keeps the session in step (SEC-29): activity keeps it alive, a check every minute ends it
+ * after 30 idle minutes, and a logout or change in another tab is noticed straight away.
+ */
+function watchSession(authController, localStore) {
+  for (const type of ['pointerdown', 'keydown']) {
+    document.addEventListener(type, () => authController.touch(), { passive: true });
+  }
+  setInterval(() => authController.recheck(), SESSION.checkIntervalMs);
+  localStore.onExternalChange((key) => {
+    // A null key means the other tab cleared the whole storage.
+    if (key === null || key === STORAGE_KEYS.sessions || key === STORAGE_KEYS.users) {
+      authController.recheck();
+    }
+  });
 }
 
 start().catch((error) => console.error('The page could not start:', error));

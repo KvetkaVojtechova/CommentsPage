@@ -30,8 +30,14 @@ export const LOCKOUT = Object.freeze({
   maxTrackedNames: 200,
 });
 
+// SEC-29: a session ends after 30 minutes without activity, after 8 hours at most, on logout
+// or when the tab closes. Activity is written at most once a minute.
 export const SESSION = Object.freeze({
   tokenBytes: 32,
+  idleMs: 30 * 60_000,
+  maxAgeMs: 8 * 60 * 60_000,
+  activityWriteMs: 60_000,
+  checkIntervalMs: 60_000,
 });
 
 export const MODERATION = Object.freeze({
