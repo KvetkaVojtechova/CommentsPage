@@ -10,6 +10,9 @@
   background-color: var(--color-white);
   font-size: 0.9rem;
   line-height: 1.2;
+  /* Labels never break inside a word; a row of buttons wraps first (see .composer__buttons). */
+  overflow-wrap: normal;
+  text-align: center;
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
@@ -334,9 +337,17 @@
   color: var(--color-warning);
 }
 
+/* When the box is too narrow for both buttons, they move to their own rows at full width. */
 .composer__buttons {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-sm);
+  margin-inline-start: auto;
+}
+
+.composer__buttons > .btn {
+  flex-grow: 1;
 }
 
 .composer__form--reply {
@@ -396,7 +407,7 @@
 }
 
 .comment-thread {
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-md) var(--card-padding-inline);
 }
 
 .comment {
@@ -406,11 +417,22 @@
   gap: var(--space-sm);
 }
 
+/* The avatar keeps its own column, so a name and time that wrap stay next to it. */
 .comment__header {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-sm);
+  align-content: center;
+  column-gap: var(--space-sm);
+  min-height: var(--avatar-size);
+  padding-inline-start: var(--content-indent);
+}
+
+.comment__header > .avatar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
 }
 
 .comment__author {
@@ -553,6 +575,24 @@ li:has(> .comment-list--replies:not([hidden])) > .comment__reply-box::before {
   min-height: var(--avatar-size);
   padding-block-start: calc(var(--avatar-size) / 2 - 0.6em);
   padding-inline-start: var(--space-sm);
+}
+
+/*
+ * On narrow screens a reply box steps back out of the indentation (--indent-levels is set by
+ * the tree view), so it always has the full width of the card, however deep the reply is.
+ */
+@media (max-width: 40rem) {
+  .comment-reply > .comment__reply-box,
+  .comment-thread > .comment__reply-box {
+    /* Above the thread lines it now covers */
+    position: relative;
+    z-index: 1;
+    margin-inline-start: calc(-1 * var(--indent-levels, 0) * var(--indent-step));
+  }
+
+  li:has(> .comment-list--replies:not([hidden])) > .comment__reply-box::before {
+    display: none;
+  }
 }
 
 /* Empty state */

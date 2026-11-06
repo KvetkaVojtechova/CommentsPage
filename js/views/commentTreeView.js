@@ -159,9 +159,19 @@ export class CommentTreeView {
       this.#closeReplyBox({ restoreFocus: false });
       return;
     }
+    this.#placeReplySlot(node);
+    focusedInput?.focus({ preventScroll: true });
+  }
+
+  /**
+   * Puts the reply box under its comment. The number of indented levels lets the CSS give the
+   * box the full width of the card on narrow screens, however deep the comment is.
+   */
+  #placeReplySlot(node) {
+    const levels = Math.min(node.depth, UI.indentCapLevel);
+    this.#replySlot.style.setProperty('--indent-levels', String(levels));
     node.article.after(this.#replySlot);
     node.replyButton?.setAttribute('aria-expanded', 'true');
-    focusedInput?.focus({ preventScroll: true });
   }
 
   #renderNode(treeNode, depth, replyingTo) {
@@ -375,8 +385,7 @@ export class CommentTreeView {
     }
     this.#replyTargetId = targetId;
     this.#replySlot = el('div', { className: 'comment__reply-box' });
-    node.article.after(this.#replySlot);
-    node.replyButton?.setAttribute('aria-expanded', 'true');
+    this.#placeReplySlot(node);
     this.#replyBox = new ComposerView(
       this.#replySlot,
       this.#store,
