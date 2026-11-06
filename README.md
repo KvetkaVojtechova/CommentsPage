@@ -28,3 +28,10 @@ Requires Node 20.19, 22.13 or newer. The dependencies are development tools only
 | `npm run lint`         | Runs ESLint                       |
 | `npm run format`       | Formats all files with Prettier   |
 | `npm run format:check` | Checks the formatting             |
+
+## Known limitations
+
+- **Colour contrast.** The assignment requires the banned-word message in `#FF8300` (about 2.3:1
+  on its background) and the Add Comment text in `#DE5050` (about 3.9:1 on white). Both are below
+  WCAG AA (4.5:1). Both are kept as required. The message also has a warning icon and a pale
+  orange background, so it does not rely on colour alone.

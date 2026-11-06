@@ -57,6 +57,8 @@ export const UI = Object.freeze({
   continueThreadAfter: 10,
   timeRefreshMs: 60_000,
   toastMs: 3_000,
+  // "Checking…" appears only when the check takes longer, so a quick one does not flash it.
+  checkingDelayMs: 500,
 });
 
 export const ASSETS = Object.freeze({

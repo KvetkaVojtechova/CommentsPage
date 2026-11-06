@@ -1,4 +1,4 @@
-import { LIMITS } from '../config.js';
+import { LIMITS, UI } from '../config.js';
 import { commentErrorKey } from '../controllers/commentController.js';
 import { STORE_EVENTS } from '../core/store.js';
 import { MESSAGES } from '../messages.js';
@@ -17,6 +17,7 @@ export class ComposerView {
   #handlers;
   #parentId;
   #busy = false;
+  #showChecking = false;
   #draftOwnerId = null;
   #unsubscribes = [];
 
@@ -114,7 +115,7 @@ export class ComposerView {
     this.#status = el('p', { className: 'composer__status', attrs: { role: 'status' } });
     this.#error = el('p', {
       className: 'composer__error',
-      attrs: { id: `${inputId}-error`, role: 'alert', hidden: true },
+      attrs: { id: `${inputId}-error`, role: 'alert' },
     });
 
     const buttons = this.#isReply
@@ -160,7 +161,7 @@ export class ComposerView {
 
   #onInput() {
     this.#renderState();
-    if (!this.#error.hidden) {
+    if (this.#error.textContent) {
       this.#handlers.clearError(this.#parentId);
     }
   }
@@ -186,12 +187,18 @@ export class ComposerView {
 
     this.#busy = true;
     this.#renderState();
+    const checkingTimer = setTimeout(() => {
+      this.#showChecking = true;
+      this.#renderState();
+    }, UI.checkingDelayMs);
     try {
       if (await this.#handlers.submit(this.#parentId, text)) {
         this.#input.value = '';
       }
     } finally {
+      clearTimeout(checkingTimer);
       this.#busy = false;
+      this.#showChecking = false;
       this.#renderState();
       // A reply box is gone after a successful reply.
       if (this.#form.isConnected) {
@@ -207,10 +214,10 @@ export class ComposerView {
     this.#counter.textContent = MESSAGES.composer.counter(length);
     this.#counter.classList.toggle('composer__counter--warning', length >= LIMITS.comment.warnAt);
     this.#submit.disabled = this.#busy || normaliseCommentText(this.#input.value) === '';
-    this.#submit.textContent = this.#busy
+    this.#submit.textContent = this.#showChecking
       ? MESSAGES.composer.checkingButton
       : MESSAGES.composer.submit;
-    this.#status.textContent = this.#busy ? MESSAGES.composer.checking : '';
+    this.#status.textContent = this.#showChecking ? MESSAGES.composer.checking : '';
   }
 
   #renderPlaceholder() {
@@ -228,7 +235,11 @@ export class ComposerView {
   #renderError() {
     const error = this.#store.state.ui.errors.get(commentErrorKey(this.#parentId));
     this.#error.textContent = error?.message ?? '';
-    this.#error.hidden = !error;
+    if (error) {
+      this.#input.setAttribute('aria-invalid', 'true');
+    } else {
+      this.#input.removeAttribute('aria-invalid');
+    }
     this.#error.classList.toggle('composer__error--blocked', error?.kind === 'blocked');
   }
 }

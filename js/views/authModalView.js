@@ -139,7 +139,7 @@ export class AuthModalView {
 
   #build() {
     this.#title = el('h2', { className: 'modal__title', attrs: { id: 'auth-title' } });
-    this.#formError = el('p', { className: 'form-error', attrs: { role: 'alert', hidden: true } });
+    this.#formError = el('p', { className: 'form-error', attrs: { role: 'alert' } });
     this.#fields = {
       username: createField('username', MESSAGES.auth.username, {
         type: 'text',
@@ -267,7 +267,7 @@ export class AuthModalView {
         field.input.removeAttribute('aria-invalid');
       }
     }
-    showError(this.#formError, errors.get(authErrorKey('form'))?.message);
+    this.#formError.textContent = errors.get(authErrorKey('form'))?.message ?? '';
   }
 
   async #onSubmit(event) {
@@ -316,7 +316,7 @@ export class AuthModalView {
     );
     if (invalid) {
       invalid.input.focus();
-    } else if (!this.#formError.hidden) {
+    } else if (this.#formError.textContent) {
       this.#fields.password.input.focus();
     }
   }

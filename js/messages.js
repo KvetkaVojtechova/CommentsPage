@@ -25,6 +25,7 @@ export const MESSAGES = Object.freeze({
   comment: Object.freeze({
     you: 'You',
     reply: 'Reply',
+    replyTo: (name) => `Reply to ${name}`,
     replyingTo: (name) => `replying to ${name}`,
   }),
   thread: Object.freeze({

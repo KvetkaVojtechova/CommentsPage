@@ -279,6 +279,19 @@
   background-color: var(--color-error-bg);
 }
 
+/* Live messages stay in the accessibility tree while empty (not display: none), so screen
+   readers announce the text when it appears; until then they take no space. */
+.form-error:empty,
+.composer__status:empty,
+.composer__error:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
 /* Comment box */
 .composer__form,
 .guest-prompt,
@@ -336,10 +349,6 @@
   font-size: 0.85rem;
 }
 
-.composer__status:empty {
-  display: none;
-}
-
 .composer__error {
   color: var(--color-error);
   font-size: 0.85rem;
@@ -354,10 +363,6 @@
   border-radius: var(--radius-md);
   background-color: var(--color-blocked-bg);
   color: var(--color-blocked);
-}
-
-.composer__error--blocked[hidden] {
-  display: none;
 }
 
 .composer__error--blocked::before {

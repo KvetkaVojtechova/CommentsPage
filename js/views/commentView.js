@@ -22,7 +22,12 @@ export function createCommentElement(comment, currentUser, { onReply, replyingTo
     ? el('button', {
         className: 'btn btn--reply',
         text: MESSAGES.comment.reply,
-        attrs: { type: 'button', 'aria-expanded': 'false' },
+        // Names the author, so the many Reply buttons can be told apart by screen readers.
+        attrs: {
+          type: 'button',
+          'aria-label': MESSAGES.comment.replyTo(comment.authorName),
+          'aria-expanded': 'false',
+        },
         on: { click: onReply },
       })
     : null;
