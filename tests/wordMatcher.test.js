@@ -44,6 +44,16 @@ describe('wordMatcher: must be blocked', () => {
     ['wаr', 'War'],
     ['Ukrаine', 'Ukraine'],
     ['Russiα', 'Russia'],
+    // Joined words, hashtags and numbers next to a word
+    ['NoWar', 'War'],
+    ['#StandWithUkraine', 'Ukraine'],
+    ['PutinIsBad', 'Putin'],
+    ['NOWar', 'War'],
+    ['Ukraine2024', 'Ukraine'],
+    ['war2', 'War'],
+    ['2war', 'War'],
+    ['NoW4r', 'War'],
+    ['x\u2063war', 'War'],
   ]) {
     it(`"${text}" → ${word}`, () => {
       assert.deepEqual(findBannedWords(text), [word]);
@@ -79,6 +89,14 @@ describe('wordMatcher: must be allowed', () => {
     'Tin can',
     'Rush hour',
     'a lovely day in 2026',
+    'wArM',
+    'SoftWare',
+    'ForWard',
+    'AwardWinning',
+    'McWarren',
+    'iPhone',
+    'Windows11',
+    'COVID19',
     '',
   ]) {
     it(`"${text}"`, () => {
@@ -94,6 +112,11 @@ describe('wordMatcher: other rules', () => {
       'War',
       'Russia',
     ]);
+  });
+
+  it('names a word found in a joined word in text order', () => {
+    assert.deepEqual(findBannedWords('Putin and NoWar'), ['Putin', 'War']);
+    assert.deepEqual(findBannedWords('NoWar and Putin'), ['War', 'Putin']);
   });
 
   it('blocks harmless phrases with a real form of a banned word on purpose', () => {

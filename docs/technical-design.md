@@ -103,7 +103,9 @@ The JSON file holds only the base words. All forms are generated from them in
 
 1. **Normalise.** Remove accents, lower-case, map Cyrillic and Greek look-alike letters to Latin.
 2. **Split into tokens.** Letters and digits form words; everything else separates them. Leetspeak
-   inside a word is mapped back (`Russ1a` → `russia`, `w@r` → `war`).
+   inside a word is mapped back (`Russ1a` → `russia`, `w@r` → `war`). Joined words are also
+   split into parts at capital letters and at numbers on their edges (`#NoWar` → `no`, `war`;
+   `Ukraine2024` → `ukraine`).
 3. **Build candidates.** Each word on its own, runs of single letters (`W.A.R`, `p u t i n`) and
    two or three neighbouring pieces joined (`Pu tin`). Pieces are not joined when they are all
    common short words, so "put in" stays allowed.

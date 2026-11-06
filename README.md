@@ -27,7 +27,7 @@ Then open <http://localhost:3000>. Any static server works too, for example
 | Guests can only read                        | Guests see every comment, but no comment box and no Reply buttons                                |
 | Anybody can reply, at any depth             | Comments are stored as a flat list with a `parentId` and drawn as a tree                         |
 | A new Web Worker checks every comment       | Add Comment starts a new worker, which loads `data/banned-words.json`, checks the text and stops |
-| Banned words in any form are blocked        | Case, plurals, nationality forms, look-alike letters, leetspeak, spaced or dotted letters        |
+| Banned words in any form are blocked        | Case, plurals, nationality forms, look-alike letters, leetspeak, spaced letters, hashtags        |
 | The user is told which word they cannot use | An orange `#FF8300` message names each banned word; the text stays                               |
 | Clean comments are added with a timestamp   | Saved under the right parent; shown as "5 min ago", with the full date on hover                  |
 | Layout and style                            | 70% wide and centred, `#F5F5F5`, Lucida Handwriting at 18px, button colours swap on hover        |

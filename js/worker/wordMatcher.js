@@ -55,21 +55,62 @@ function normalise(text) {
   ).join('');
 }
 
-/** Runs of letters, digits and @ $ ! |; symbols at the edges are dropped ("war!" → "war"). */
-function tokenise(text) {
-  return (text.match(/[\p{L}\p{N}@$!|]+/gu) ?? [])
-    .map((token) => token.replace(/^[@$!|]+|[@$!|]+$/g, ''))
-    .filter(Boolean)
-    .map((token) => Array.from(token, (char) => LEETSPEAK.get(char) ?? char).join(''));
+// Marks where a word is split into parts. An invisible character that normalising keeps.
+const PART_MARK = '\u2063';
+const TOKEN_PATTERN = new RegExp(`[\\p{L}\\p{N}@$!|${PART_MARK}]+`, 'gu');
+
+/**
+ * Marks the parts of joined words before letter case is lost. Digits inside a word are left
+ * alone, so leetspeak such as "Russ1a" still reads as one word.
+ */
+function markWordParts(text) {
+  return (
+    text
+      // The same invisible character typed by the user still separates words.
+      .replaceAll(PART_MARK, ' ')
+      // "NoWar" → "No|War"
+      .replace(/(\p{Ll})(?=\p{Lu})/gu, `$1${PART_MARK}`)
+      // "NOWar" → "NO|War"
+      .replace(/(\p{Lu})(?=\p{Lu}\p{Ll})/gu, `$1${PART_MARK}`)
+      // "Ukraine2024" → "Ukraine|2024"
+      .replace(/(\p{L})(?=\p{N}+(?![\p{L}\p{N}]))/gu, `$1${PART_MARK}`)
+      // "2war" → "2|war"
+      .replace(/(?<![\p{L}\p{N}])(\p{N}+)(?=\p{L})/gu, `$1${PART_MARK}`)
+  );
+}
+
+function fromLeetspeak(text) {
+  return Array.from(text, (char) => LEETSPEAK.get(char) ?? char).join('');
 }
 
 /**
- * Every piece of text that is compared with the banned forms, in text order:
- * each token, letters spelled out one by one ("w a r", "W.A.R") and split words ("Pu tin").
+ * Runs of letters, digits and @ $ ! |; symbols at the edges are dropped ("war!" → "war").
+ * Each token keeps its marked parts, so "nowar" can also be checked as "no" and "war".
  */
-function* candidates(tokens) {
+function tokenise(text) {
+  return (text.match(TOKEN_PATTERN) ?? [])
+    .map((token) => token.replace(/^[@$!|]+|[@$!|]+$/g, ''))
+    .map((token) => {
+      const parts = token.split(PART_MARK).filter(Boolean).map(fromLeetspeak);
+      return { text: fromLeetspeak(token.replaceAll(PART_MARK, '')), parts };
+    })
+    .filter((token) => token.text !== '');
+}
+
+/**
+ * Every piece of text that is compared with the banned forms, in text order: each token and
+ * the parts of a joined word ("NoWar"), letters spelled out one by one ("w a r", "W.A.R") and
+ * split words ("Pu tin").
+ */
+function* candidates(tokenList) {
+  const tokens = tokenList.map((token) => token.text);
   for (let start = 0; start < tokens.length; start++) {
     yield tokens[start];
+
+    // Parts of a joined word are compared one by one, never joined in other ways.
+    if (tokenList[start].parts.length > 1) {
+      yield* tokenList[start].parts;
+    }
 
     // Spelled-out letters: every run of 3 or more single-letter tokens starting here.
     let letters = '';
@@ -150,7 +191,7 @@ export function buildMatcher(words) {
 
   return function findBannedWords(text) {
     const found = new Set();
-    for (const candidate of candidates(tokenise(normalise(text)))) {
+    for (const candidate of candidates(tokenise(normalise(markWordParts(text))))) {
       const word = match(candidate);
       if (word) {
         found.add(word);
