@@ -22,6 +22,12 @@ export class UserRepository {
     return this.#readAll().find((user) => user.id === id) ?? null;
   }
 
+  /** Replaces a stored user, e.g. after a password is re-hashed with stronger settings. */
+  async update(user) {
+    const users = this.#readAll().map((stored) => (stored.id === user.id ? user : stored));
+    this.#storage.write(STORAGE_KEYS.users, users);
+  }
+
   /** Reads the latest list before writing, so a user added in another tab is kept. */
   async add(user) {
     this.#storage.write(STORAGE_KEYS.users, [...this.#readAll(), user]);

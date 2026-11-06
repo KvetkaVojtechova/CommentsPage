@@ -18,8 +18,13 @@ export class ValidationError extends AppError {
 }
 
 export class AuthError extends AppError {
-  constructor(code = 'wrongCredentials') {
+  /**
+   * @param {'wrongCredentials' | 'tooManyAttempts'} [code]
+   * @param {{ retryAfterSeconds?: number }} [details] For "tooManyAttempts": how long to wait.
+   */
+  constructor(code = 'wrongCredentials', { retryAfterSeconds = 0 } = {}) {
     super(code);
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 

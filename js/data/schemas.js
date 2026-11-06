@@ -2,7 +2,7 @@
  * Validates records read from storage (SEC-10/11). Each parser returns a new object that
  * contains only the known fields, so keys like __proto__ can never reach the app, or null.
  */
-import { SESSION } from '../config.js';
+import { LIMITS, SESSION } from '../config.js';
 import {
   isIsoDate,
   isUuid,
@@ -54,6 +54,23 @@ export function parseComment(raw) {
     isIsoDate(createdAt);
 
   return isValid ? { id, parentId, authorId, authorName, text, createdAt } : null;
+}
+
+const isCount = (value) => Number.isInteger(value) && value >= 0;
+
+export function parseLoginAttempt(raw) {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const { usernameKey, failures, lockLevel, lockedUntil } = raw;
+  const isValid =
+    typeof usernameKey === 'string' &&
+    usernameKey.length > 0 &&
+    usernameKey.length <= LIMITS.username.max &&
+    isCount(failures) &&
+    isCount(lockLevel) &&
+    isCount(lockedUntil);
+  return isValid ? { usernameKey, failures, lockLevel, lockedUntil } : null;
 }
 
 export function parseTabSession(raw) {

@@ -1,4 +1,5 @@
 import { LIMITS } from '../config.js';
+import { isCommonPassword } from '../services/commonPasswords.js';
 
 // Letters of the Latin alphabet only, accented ones included ("Ľubomír"), so look-alike
 // letters from other alphabets (Cyrillic "а" for "a") cannot imitate another username.
@@ -35,15 +36,59 @@ export function validateUsername(username) {
   return USERNAME_PATTERN.test(username) ? VALID : invalid('usernameInvalid');
 }
 
-/** FR-05 / SEC-25: 12–128 characters, any characters allowed, entered twice. */
-export function validatePassword(password, confirmation) {
+/**
+ * FR-05 / SEC-25: 12–128 characters, any characters allowed, not a common password, not
+ * containing the username, entered twice.
+ * @param {string} password
+ * @param {string} confirmation
+ * @param {string} [username]
+ */
+export function validatePassword(password, confirmation, username = '') {
+  const ruleCheck = checkPasswordRules(password, username);
+  if (!ruleCheck.ok) {
+    return ruleCheck;
+  }
+  return password === confirmation ? VALID : invalid('passwordMismatch');
+}
+
+function checkPasswordRules(password, username) {
   if (typeof password !== 'string' || password.length < LIMITS.password.min) {
     return invalid('passwordTooShort');
   }
   if (password.length > LIMITS.password.max) {
     return invalid('passwordTooLong');
   }
-  return password === confirmation ? VALID : invalid('passwordMismatch');
+  if (isCommonPassword(password)) {
+    return invalid('passwordTooCommon');
+  }
+  const usernameKey = toUsernameKey(username);
+  if (usernameKey && password.normalize('NFKC').toLowerCase().includes(usernameKey)) {
+    return invalid('passwordContainsUsername');
+  }
+  return VALID;
+}
+
+const CHARACTER_KINDS = [/\p{Ll}/u, /\p{Lu}/u, /\p{N}/u, /[^\p{L}\p{N}]/u];
+
+/**
+ * A rough strength estimate for the hint under the password field (SEC-25). Length counts
+ * most; a mix of character kinds helps a little. It never adds rules beyond validatePassword.
+ * @returns {{ level: 'weak' | 'fair' | 'good' | 'strong', code: string | null }}
+ *   `code` says why a password is weak, e.g. "passwordTooCommon".
+ */
+export function passwordStrength(password, username = '') {
+  const check = checkPasswordRules(password, username);
+  if (!check.ok) {
+    return { level: 'weak', code: check.code };
+  }
+  const kinds = CHARACTER_KINDS.filter((kind) => kind.test(password)).length;
+  if (password.length >= 20 || (password.length >= 16 && kinds >= 3)) {
+    return { level: 'strong', code: null };
+  }
+  if (password.length >= 16 || kinds >= 3) {
+    return { level: 'good', code: null };
+  }
+  return { level: 'fair', code: null };
 }
 
 /** Usernames are unique regardless of case ("Anna" = "anna", "ĽUBO" = "ľubo"). */

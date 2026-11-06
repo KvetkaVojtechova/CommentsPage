@@ -53,4 +53,16 @@ describe('UserRepository', () => {
     assert.notEqual(await repository.findByUsernameKey('anna'), null);
     assert.equal(await repository.findByUsernameKey('eve'), null);
   });
+
+  it('updates a stored user', async () => {
+    const repository = new UserRepository(new MemoryStorageAdapter());
+    await repository.add(storedUser());
+    const changed = storedUser({
+      passwordHash: storedUser().passwordHash.replace('600000', '700000'),
+    });
+
+    await repository.update(changed);
+
+    assert.deepEqual(await repository.findById(changed.id), changed);
+  });
 });

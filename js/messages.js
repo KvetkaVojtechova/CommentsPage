@@ -1,6 +1,7 @@
 import { LIMITS, UI } from './config.js';
 
 const listFormat = new Intl.ListFormat(UI.locale, { type: 'conjunction' });
+const countOf = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
 export const MESSAGES = Object.freeze({
   emptyState: Object.freeze({
@@ -67,6 +68,17 @@ export const MESSAGES = Object.freeze({
     toLoginPrompt: 'Already have an account?',
     toLoginAction: 'Log in',
     close: 'Close',
+    showPassword: 'Show password',
+    passwordAdvice: `Use at least ${LIMITS.password.min} characters. A short sentence is easy to remember and hard to guess.`,
+    strength: (level, tip) => `Strength: ${level}${tip ? ` – ${tip}` : ''}.`,
+    strengthLevels: Object.freeze({ weak: 'weak', fair: 'fair', good: 'good', strong: 'strong' }),
+    strengthTips: Object.freeze({
+      passwordTooShort: `use at least ${LIMITS.password.min} characters`,
+      passwordTooLong: `use at most ${LIMITS.password.max} characters`,
+      passwordTooCommon: 'this password is too common',
+      passwordContainsUsername: 'do not use your username in it',
+      fair: 'a longer password is stronger',
+    }),
   }),
   errors: Object.freeze({
     usernameRequired: 'Please enter a username.',
@@ -77,6 +89,10 @@ export const MESSAGES = Object.freeze({
     passwordTooLong: `Password can have at most ${LIMITS.password.max} characters.`,
     passwordMismatch: 'The passwords do not match.',
     wrongCredentials: 'Wrong username or password.',
+    tooManyAttempts: (seconds) =>
+      `Too many attempts. Try again in ${seconds < 60 ? countOf(seconds, 'second') : countOf(Math.ceil(seconds / 60), 'minute')}.`,
+    passwordTooCommon: 'This password is too common.',
+    passwordContainsUsername: 'The password must not contain your username.',
     loginRequired: 'Please log in again to post your comment.',
     blockedWords: (words) =>
       words.length === 1

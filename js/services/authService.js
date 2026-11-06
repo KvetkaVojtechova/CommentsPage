@@ -6,7 +6,7 @@ import {
   validatePassword,
   validateUsername,
 } from '../utils/validators.js';
-import { hashPassword, randomHex, verifyPassword } from './passwordHasher.js';
+import { dummyVerify, hashPassword, randomHex, verifyPassword } from './passwordHasher.js';
 
 export function createUser({ username, passwordHash, salt }) {
   return {
@@ -27,16 +27,22 @@ function toPublicUser(user) {
 export class AuthService {
   #users;
   #sessions;
+  #attempts;
+  #now;
 
   /**
    * @param {{
    *   userRepository: import('../data/userRepository.js').UserRepository,
    *   sessionRepository: import('../data/sessionRepository.js').SessionRepository,
-   * }} dependencies
+   *   loginAttemptRepository: import('../data/loginAttemptRepository.js').LoginAttemptRepository,
+   *   now?: () => number,
+   * }} dependencies `now` is the clock, replaceable in tests.
    */
-  constructor({ userRepository, sessionRepository }) {
+  constructor({ userRepository, sessionRepository, loginAttemptRepository, now = Date.now }) {
     this.#users = userRepository;
     this.#sessions = sessionRepository;
+    this.#attempts = loginAttemptRepository;
+    this.#now = now;
   }
 
   async register(username, password, confirmation) {
@@ -45,7 +51,7 @@ export class AuthService {
     if (!usernameCheck.ok) {
       throw new ValidationError('username', usernameCheck.code);
     }
-    const passwordCheck = validatePassword(password, confirmation);
+    const passwordCheck = validatePassword(password, confirmation, name);
     if (!passwordCheck.ok) {
       const field = passwordCheck.code === 'passwordMismatch' ? 'confirmation' : 'password';
       throw new ValidationError(field, passwordCheck.code);
@@ -69,12 +75,46 @@ export class AuthService {
       throw new ValidationError('password', 'passwordRequired');
     }
 
-    // One error for an unknown user and a wrong password (FR-07).
-    const user = await this.#users.findByUsernameKey(toUsernameKey(name));
-    if (!user || !(await verifyPassword(password, user.passwordHash)).ok) {
+    const usernameKey = toUsernameKey(name);
+    // A name that can never be an account is not tracked, so it cannot fill the storage.
+    const isTracked = validateUsername(name).ok;
+    if (isTracked) {
+      await this.#checkLockout(usernameKey);
+    }
+
+    // An unknown username and a wrong password take the same time and give the same
+    // error, so neither reveals which accounts exist (FR-07, SEC-27).
+    const user = await this.#users.findByUsernameKey(usernameKey);
+    const result = user
+      ? await verifyPassword(password, user.passwordHash)
+      : await dummyVerify(password);
+    if (!user || !result.ok) {
+      if (isTracked) {
+        await this.#attempts.recordFailure(usernameKey, this.#now());
+      }
       throw new AuthError();
     }
+
+    await this.#attempts.reset(usernameKey);
+    if (result.needsRehash) {
+      await this.#rehash(user, password);
+    }
     return this.#startSession(user);
+  }
+
+  /** SEC-28: a locked name is refused before the password is even checked. */
+  async #checkLockout(usernameKey) {
+    const { lockedUntil } = await this.#attempts.get(usernameKey);
+    const waitMs = lockedUntil - this.#now();
+    if (waitMs > 0) {
+      throw new AuthError('tooManyAttempts', { retryAfterSeconds: Math.ceil(waitMs / 1000) });
+    }
+  }
+
+  /** SEC-22: a password hashed with older settings is hashed again with the current ones. */
+  async #rehash(user, password) {
+    const { passwordHash, salt } = await hashPassword(password);
+    await this.#users.update({ ...user, passwordHash, salt });
   }
 
   async logout() {

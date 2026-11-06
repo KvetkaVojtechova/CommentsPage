@@ -65,11 +65,24 @@ export function constantTimeEqual(a, b) {
   return difference === 0;
 }
 
-/** @returns {Promise<{ passwordHash: string, salt: string }>} */
-export async function hashPassword(password) {
+/**
+ * @param {string} password
+ * @param {{ iterations?: number }} [options] Only tests use other settings.
+ * @returns {Promise<{ passwordHash: string, salt: string }>}
+ */
+export async function hashPassword(password, { iterations = PBKDF2.iterations } = {}) {
   const salt = randomHex(PBKDF2.saltBytes);
-  const hash = await deriveHashHex(password, salt, PBKDF2.iterations);
-  return { passwordHash: [PBKDF2.algorithm, PBKDF2.iterations, salt, hash].join('$'), salt };
+  const hash = await deriveHashHex(password, salt, iterations);
+  return { passwordHash: [PBKDF2.algorithm, iterations, salt, hash].join('$'), salt };
+}
+
+// A hash no password matches, used to spend the same time on an unknown username (SEC-27).
+const DUMMY_HASH = [PBKDF2.algorithm, PBKDF2.iterations, '0'.repeat(32), '0'.repeat(64)].join('$');
+
+/** Does the same work as verifyPassword and always fails. */
+export async function dummyVerify(password) {
+  await verifyPassword(password, DUMMY_HASH);
+  return { ok: false, needsRehash: false };
 }
 
 /**

@@ -199,6 +199,74 @@
   border-color: var(--color-error);
 }
 
+.field__hint {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.field__hint--weak {
+  color: var(--color-error);
+}
+
+.field__hint--fair {
+  color: var(--color-warning);
+}
+
+.field__hint--good,
+.field__hint--strong {
+  color: var(--color-success);
+}
+
+/* Password field with the show / hide button inside it on the right */
+.field__control {
+  position: relative;
+}
+
+.field__input--with-toggle {
+  padding-inline-end: 3rem;
+}
+
+/* Edge shows its own reveal button; the page has one already. */
+.field__input::-ms-reveal {
+  display: none;
+}
+
+.password-toggle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--space-xs);
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-block: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--color-reply);
+}
+
+/* The icon is an SVG mask filled with the button's text colour. */
+.password-toggle::before {
+  content: '';
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: auto;
+  background-color: currentColor;
+  -webkit-mask: var(--icon-eye-off) center / contain no-repeat;
+  mask: var(--icon-eye-off) center / contain no-repeat;
+}
+
+.password-toggle[aria-pressed='true']::before {
+  -webkit-mask-image: var(--icon-eye);
+  mask-image: var(--icon-eye);
+}
+
 .field__error,
 .form-error {
   color: var(--color-error);

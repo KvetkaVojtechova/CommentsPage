@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   constantTimeEqual,
+  dummyVerify,
   hashPassword,
   randomHex,
   sha256Hex,
@@ -43,6 +44,17 @@ describe('passwordHasher', () => {
     const { passwordHash } = await hashPassword(composed);
 
     assert.equal((await verifyPassword(decomposed, passwordHash)).ok, true);
+  });
+
+  it('asks for a re-hash when the stored hash used older settings', async () => {
+    const { passwordHash } = await hashPassword(PASSWORD, { iterations: 1000 });
+
+    assert.match(passwordHash, /^pbkdf2-sha256\$1000\$/);
+    assert.deepEqual(await verifyPassword(PASSWORD, passwordHash), { ok: true, needsRehash: true });
+  });
+
+  it('dummyVerify always fails', async () => {
+    assert.deepEqual(await dummyVerify(PASSWORD), { ok: false, needsRehash: false });
   });
 
   it('rejects a stored value in an unknown format', async () => {

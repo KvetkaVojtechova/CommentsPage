@@ -3,6 +3,7 @@ import { STORE_EVENTS } from '../core/store.js';
 import { MESSAGES } from '../messages.js';
 import { LIMITS } from '../config.js';
 import { el } from '../utils/dom.js';
+import { passwordStrength } from '../utils/validators.js';
 
 const MODE_TEXT = Object.freeze({
   login: {
@@ -41,6 +42,31 @@ function createField(name, label, inputAttrs) {
   return { wrapper, input, error };
 }
 
+function setPasswordVisible({ input, toggle }, visible) {
+  input.type = visible ? 'text' : 'password';
+  toggle.setAttribute('aria-pressed', String(visible));
+}
+
+/** A password field with an eye button on the right that shows or hides what was typed. */
+function createPasswordField(name, label, inputAttrs) {
+  const field = createField(name, label, { type: 'password', ...inputAttrs });
+  field.input.classList.add('field__input--with-toggle');
+  field.toggle = el('button', {
+    className: 'password-toggle',
+    attrs: {
+      type: 'button',
+      'aria-label': MESSAGES.auth.showPassword,
+      'aria-controls': field.input.id,
+      'aria-pressed': 'false',
+    },
+    on: { click: () => setPasswordVisible(field, field.input.type === 'password') },
+  });
+  const control = el('div', { className: 'field__control' });
+  field.input.replaceWith(control);
+  control.append(field.input, field.toggle);
+  return field;
+}
+
 function showError(target, message) {
   target.textContent = message ?? '';
   target.hidden = !message;
@@ -63,6 +89,7 @@ export class AuthModalView {
   #form;
   #formError;
   #fields;
+  #strengthHint;
   #submit;
   #switchPrompt;
   #switchButton;
@@ -121,16 +148,22 @@ export class AuthModalView {
         spellcheck: 'false',
         maxlength: LIMITS.username.max,
       }),
-      password: createField('password', MESSAGES.auth.password, {
-        type: 'password',
+      password: createPasswordField('password', MESSAGES.auth.password, {
         maxlength: LIMITS.password.max,
       }),
-      confirmation: createField('confirmation', MESSAGES.auth.confirmation, {
-        type: 'password',
+      confirmation: createPasswordField('confirmation', MESSAGES.auth.confirmation, {
         autocomplete: 'new-password',
         maxlength: LIMITS.password.max,
       }),
     };
+    this.#strengthHint = el('p', {
+      className: 'field__hint',
+      attrs: { id: 'auth-password-hint' },
+    });
+    this.#fields.password.error.before(this.#strengthHint);
+    for (const field of [this.#fields.username, this.#fields.password]) {
+      field.input.addEventListener('input', () => this.#renderStrength());
+    }
     this.#submit = el('button', { className: 'btn btn--primary', attrs: { type: 'submit' } });
     this.#switchPrompt = el('span');
     this.#switchButton = el('button', {
@@ -198,7 +231,30 @@ export class AuthModalView {
     password.input.setAttribute('autocomplete', text.passwordAutocomplete);
     confirmation.wrapper.hidden = !isRegister;
     confirmation.input.disabled = !isRegister;
+    // The strength hint helps when choosing a password, so it is shown only when registering.
+    this.#strengthHint.hidden = !isRegister;
+    password.input.setAttribute(
+      'aria-describedby',
+      isRegister ? `${this.#strengthHint.id} ${password.error.id}` : password.error.id,
+    );
     this.#clearPasswords();
+  }
+
+  #renderStrength() {
+    const password = this.#fields.password.input.value;
+    const hint = this.#strengthHint;
+    hint.className = 'field__hint';
+    if (!password) {
+      hint.textContent = MESSAGES.auth.passwordAdvice;
+      return;
+    }
+    const { level, code } = passwordStrength(password, this.#fields.username.input.value);
+    const tipKey = code ?? (level === 'fair' ? 'fair' : null);
+    hint.textContent = MESSAGES.auth.strength(
+      MESSAGES.auth.strengthLevels[level],
+      tipKey ? MESSAGES.auth.strengthTips[tipKey] : null,
+    );
+    hint.classList.add(`field__hint--${level}`);
   }
 
   #renderErrors(errors) {
@@ -225,6 +281,8 @@ export class AuthModalView {
       password: password.input.value,
       confirmation: confirmation.input.value,
     };
+    // Hidden again before submitting, so the browser never stores the password as plain text.
+    this.#hidePasswords();
 
     this.#setBusy(true);
     try {
@@ -278,6 +336,7 @@ export class AuthModalView {
     }
     this.#mode = null;
     this.#form.reset();
+    this.#hidePasswords();
     if (this.#store.state.ui.modal) {
       this.#handlers.closeAuth();
     }
@@ -287,8 +346,15 @@ export class AuthModalView {
     this.#opener = null;
   }
 
+  #hidePasswords() {
+    setPasswordVisible(this.#fields.password, false);
+    setPasswordVisible(this.#fields.confirmation, false);
+  }
+
   #clearPasswords() {
+    this.#hidePasswords();
     this.#fields.password.input.value = '';
     this.#fields.confirmation.input.value = '';
+    this.#renderStrength();
   }
 }

@@ -5,7 +5,9 @@ import { AuthError, ValidationError } from '../js/core/errors.js';
 import { MemoryStorageAdapter } from '../js/data/storageAdapter.js';
 import { SessionRepository } from '../js/data/sessionRepository.js';
 import { UserRepository } from '../js/data/userRepository.js';
+import { LoginAttemptRepository } from '../js/data/loginAttemptRepository.js';
 import { AuthService } from '../js/services/authService.js';
+import { hashPassword } from '../js/services/passwordHasher.js';
 
 const PASSWORD = 'correct horse battery';
 
@@ -13,13 +15,17 @@ describe('AuthService', () => {
   let localStore;
   let tabStore;
   let auth;
+  let clock;
 
   beforeEach(() => {
     localStore = new MemoryStorageAdapter();
     tabStore = new MemoryStorageAdapter();
+    clock = Date.parse('2026-11-06T10:00:00Z');
     auth = new AuthService({
       userRepository: new UserRepository(localStore),
       sessionRepository: new SessionRepository(tabStore),
+      loginAttemptRepository: new LoginAttemptRepository(localStore),
+      now: () => clock,
     });
   });
 
@@ -95,5 +101,95 @@ describe('AuthService', () => {
 
     assert.equal(await auth.restoreSession(), null);
     assert.equal(tabStore.read(STORAGE_KEYS.session), null);
+  });
+
+  it('refuses common passwords and passwords that contain the username', async () => {
+    await assert.rejects(auth.register('Anna', 'passwordpassword', 'passwordpassword'), {
+      field: 'password',
+      code: 'passwordTooCommon',
+    });
+    await assert.rejects(auth.register('Anna', 'I am anna, hello', 'I am anna, hello'), {
+      field: 'password',
+      code: 'passwordContainsUsername',
+    });
+  });
+
+  describe('lockout after failed logins (SEC-28)', () => {
+    const wrongLogin = () => auth.login('Anna', 'wrong password!');
+    const tooMany = (seconds) => ({ code: 'tooManyAttempts', retryAfterSeconds: seconds });
+
+    beforeEach(async () => {
+      await auth.register('Anna', PASSWORD, PASSWORD);
+      await auth.logout();
+    });
+
+    it('blocks the next try after 5 failures, doubling the wait up to 15 minutes', async () => {
+      for (let i = 0; i < 5; i++) {
+        await assert.rejects(wrongLogin(), { code: 'wrongCredentials' });
+      }
+      // Even the right password is refused while the name is locked.
+      await assert.rejects(auth.login('Anna', PASSWORD), tooMany(30));
+
+      clock += 10_000;
+      await assert.rejects(wrongLogin(), tooMany(20));
+
+      for (const waitSeconds of [60, 120, 240, 480, 900, 900]) {
+        clock += 60 * 60_000;
+        await assert.rejects(wrongLogin(), { code: 'wrongCredentials' });
+        await assert.rejects(wrongLogin(), tooMany(waitSeconds));
+      }
+    });
+
+    it('resets the counter after a successful login', async () => {
+      for (let i = 0; i < 4; i++) {
+        await assert.rejects(wrongLogin(), { code: 'wrongCredentials' });
+      }
+      await auth.login('Anna', PASSWORD);
+      await auth.logout();
+
+      for (let i = 0; i < 4; i++) {
+        await assert.rejects(wrongLogin(), { code: 'wrongCredentials' });
+      }
+      await auth.login('Anna', PASSWORD);
+    });
+
+    it('counts unknown usernames the same way', async () => {
+      for (let i = 0; i < 5; i++) {
+        await assert.rejects(auth.login('Nobody', PASSWORD), { code: 'wrongCredentials' });
+      }
+      await assert.rejects(auth.login('Nobody', PASSWORD), tooMany(30));
+      await auth.login('Anna', PASSWORD);
+    });
+  });
+
+  it('takes about as long for an unknown user as for a wrong password (SEC-27)', async () => {
+    await auth.register('Anna', PASSWORD, PASSWORD);
+    const time = async (username) => {
+      const start = performance.now();
+      await assert.rejects(auth.login(username, 'wrong password!'), { code: 'wrongCredentials' });
+      return performance.now() - start;
+    };
+
+    const wrongPassword = await time('Anna');
+    const unknownUser = await time('Nobody');
+
+    const ratio = unknownUser / wrongPassword;
+    assert.ok(ratio > 0.5 && ratio < 2, `unknown user took ${ratio.toFixed(2)}× as long`);
+  });
+
+  it('re-hashes a password stored with older settings after a successful login (SEC-22)', async () => {
+    const user = await auth.register('Anna', PASSWORD, PASSWORD);
+    const old = await hashPassword(PASSWORD, { iterations: 1000 });
+    const users = localStore.read(STORAGE_KEYS.users);
+    localStore.write(STORAGE_KEYS.users, [{ ...users[0], ...old }]);
+    await auth.logout();
+
+    assert.deepEqual(await auth.login('Anna', PASSWORD), user);
+
+    const [stored] = localStore.read(STORAGE_KEYS.users);
+    assert.match(stored.passwordHash, /^pbkdf2-sha256\$600000\$/);
+    assert.notEqual(stored.salt, old.salt);
+    await auth.logout();
+    assert.deepEqual(await auth.login('Anna', PASSWORD), user);
   });
 });

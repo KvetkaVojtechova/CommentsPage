@@ -21,6 +21,15 @@ export const PBKDF2 = Object.freeze({
   hashBytes: 32,
 });
 
+// SEC-28: after 5 failed logins the next try waits 30 s, doubling each time up to 15 min.
+export const LOCKOUT = Object.freeze({
+  freeAttempts: 5,
+  baseWaitMs: 30_000,
+  maxWaitMs: 15 * 60_000,
+  // Enough for many names; old entries drop out so storage cannot be filled up.
+  maxTrackedNames: 200,
+});
+
 export const SESSION = Object.freeze({
   tokenBytes: 32,
 });

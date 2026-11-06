@@ -5,6 +5,7 @@ import { Store } from './core/store.js';
 import { WebStorageAdapter } from './data/storageAdapter.js';
 import { UserRepository } from './data/userRepository.js';
 import { SessionRepository } from './data/sessionRepository.js';
+import { LoginAttemptRepository } from './data/loginAttemptRepository.js';
 import { CommentRepository } from './data/commentRepository.js';
 import { AuthService } from './services/authService.js';
 import { CommentService } from './services/commentService.js';
@@ -64,6 +65,7 @@ async function start() {
   const authService = new AuthService({
     userRepository: new UserRepository(localStore),
     sessionRepository: new SessionRepository(new WebStorageAdapter(sessionStorage)),
+    loginAttemptRepository: new LoginAttemptRepository(localStore),
   });
   const commentService = new CommentService({
     commentRepository: new CommentRepository(localStore),

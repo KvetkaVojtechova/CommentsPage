@@ -4,6 +4,7 @@ import {
   isIsoDate,
   isUuid,
   normaliseCommentText,
+  passwordStrength,
   normaliseUsername,
   toUsernameKey,
   validateCommentText,
@@ -59,10 +60,10 @@ describe('normaliseUsername and toUsernameKey', () => {
 });
 
 describe('validatePassword', () => {
-  const twelve = 'abcdefghijkl';
+  const example = 'lake by night';
 
   it('accepts 12–128 characters, including spaces, entered twice', () => {
-    assert.equal(validatePassword(twelve, twelve).ok, true);
+    assert.equal(validatePassword(example, example).ok, true);
     assert.equal(validatePassword(' '.repeat(12), ' '.repeat(12)).ok, true);
     assert.equal(validatePassword('x'.repeat(128), 'x'.repeat(128)).ok, true);
   });
@@ -72,8 +73,21 @@ describe('validatePassword', () => {
     assert.equal(validatePassword('x'.repeat(129), 'x'.repeat(129)).code, 'passwordTooLong');
   });
 
+  it('rejects common passwords, in any case', () => {
+    for (const password of ['passwordpassword', 'Password1234', 'QWERTY123456', '123456789012']) {
+      assert.equal(validatePassword(password, password).code, 'passwordTooCommon', password);
+    }
+  });
+
+  it('rejects a password that contains the username', () => {
+    const password = 'my name is ANNA!';
+
+    assert.equal(validatePassword(password, password, 'Anna').code, 'passwordContainsUsername');
+    assert.equal(validatePassword(password, password, 'Ben').ok, true);
+  });
+
   it('rejects entries that do not match', () => {
-    assert.equal(validatePassword(twelve, `${twelve}!`).code, 'passwordMismatch');
+    assert.equal(validatePassword(example, `${example}!`).code, 'passwordMismatch');
   });
 });
 
@@ -106,4 +120,21 @@ describe('isUuid and isIsoDate', () => {
     assert.equal(isIsoDate('2026-13-45T99:00:00.000Z'), false);
     assert.equal(isIsoDate('5 Nov 2026'), false);
   });
+});
+
+describe('passwordStrength', () => {
+  for (const [password, level, code] of [
+    ['short', 'weak', 'passwordTooShort'],
+    ['passwordpassword', 'weak', 'passwordTooCommon'],
+    ['anna is great!', 'weak', 'passwordContainsUsername'],
+    ['abcdefghijkx', 'fair', null],
+    ['Abcdefghijk1', 'good', null],
+    ['abcdefghijklmnop', 'good', null],
+    ['Correct horse 7!', 'strong', null],
+    ['correct horse battery', 'strong', null],
+  ]) {
+    it(`"${password}" is ${level}`, () => {
+      assert.deepEqual(passwordStrength(password, 'Anna'), { level, code });
+    });
+  }
 });

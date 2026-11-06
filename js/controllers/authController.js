@@ -1,4 +1,4 @@
-import { AppError, ValidationError } from '../core/errors.js';
+import { AppError, AuthError, ValidationError } from '../core/errors.js';
 import { MESSAGES } from '../messages.js';
 
 const AUTH_ERROR_FIELDS = ['username', 'password', 'confirmation', 'form'];
@@ -88,7 +88,10 @@ export class AuthController {
       console.error(error);
     }
     const field = error instanceof ValidationError ? error.field : 'form';
-    const message = MESSAGES.errors[error?.messageKey] ?? MESSAGES.errors.unexpected;
+    const message =
+      error instanceof AuthError && error.code === 'tooManyAttempts'
+        ? MESSAGES.errors.tooManyAttempts(error.retryAfterSeconds)
+        : (MESSAGES.errors[error?.messageKey] ?? MESSAGES.errors.unexpected);
     this.#store.setError(authErrorKey(field), message);
   }
 }
