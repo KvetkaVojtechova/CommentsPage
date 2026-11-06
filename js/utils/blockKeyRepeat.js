@@ -1,5 +1,5 @@
 /*
- * Holding down a key in a comment box types it only once (FR-40 to FR-43). Editing and
+ * Holding down a key in a comment box types it only once. Editing and
  * navigation keys (Backspace, Delete, arrows, Home, End, Page Up/Down) still repeat, and
  * shortcuts with Ctrl, Cmd or Alt, pasting and the login fields are not affected.
  */

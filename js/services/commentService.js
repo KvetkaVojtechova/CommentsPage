@@ -36,8 +36,8 @@ export class CommentService {
 
   /**
    * Saves a comment by the logged-in user: top-level when `parentId` is null, otherwise a reply.
-   * Permission is checked here too, not only by hiding the buttons (FR-12). The banned-word
-   * check runs here as well, so nothing can be saved without it (D-12).
+   * Permission is checked here too, not only by hiding the buttons. The banned-word
+   * check runs here as well, so nothing can be saved without it.
    * @param {{ parentId?: string | null, text: string }} input
    */
   async add({ parentId = null, text }) {
@@ -56,7 +56,7 @@ export class CommentService {
       throw new ValidationError('parentId', 'parentMissing');
     }
 
-    // The same text is checked and saved (SEC-33).
+    // The same text is checked and saved.
     const { blocked, words } = await this.#moderation.check(cleanText);
     if (blocked) {
       throw new ModerationError('blocked', words);

@@ -5,7 +5,7 @@ import { el } from '../utils/dom.js';
 
 /**
  * The empty-state card while there are no comments, and the guest prompt card that
- * replaces the comment box for visitors who are not logged in (spec 4.3).
+ * replaces the comment box for visitors who are not logged in.
  */
 export class EmptyStateView {
   #commentsRoot;

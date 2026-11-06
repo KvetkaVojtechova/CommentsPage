@@ -1,5 +1,5 @@
 /*
- * A built-in list of very common passwords (SEC-25). Most short ones are already refused by the
+ * A built-in list of very common passwords. Most short ones are already refused by the
  * 12-character minimum; they stay on the list so it still works if the minimum changes.
  * Compared without regard to case.
  */

@@ -1,5 +1,5 @@
 /*
- * Validates records read from storage (SEC-10/11). Each parser returns a new object that
+ * Validates records read from storage. Each parser returns a new object that
  * contains only the known fields, so keys like __proto__ can never reach the app, or null.
  */
 import { LIMITS, SESSION } from '../config.js';

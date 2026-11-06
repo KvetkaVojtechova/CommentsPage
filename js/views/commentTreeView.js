@@ -20,7 +20,7 @@ function findTreeNode(nodes, commentId) {
   return null;
 }
 
-// Broken stored data is left out of the tree (FR-27); the console says so.
+// Broken stored data is left out of the tree; the console says so.
 function warnAboutHiddenComments(comments, tree) {
   const shown = tree.reduce((sum, node) => sum + 1 + node.descendantCount, 0);
   if (shown < comments.length) {
@@ -33,9 +33,9 @@ function warnAboutHiddenComments(comments, tree) {
 /**
  * The comment tree as nested lists, one card per top-level comment and its replies.
  * A Map from comment id to its elements lets a new comment, the reply box or a collapse be
- * applied in place, without searching the page or drawing everything again (SEC-03).
+ * applied in place, without searching the page or drawing everything again.
  *
- * Large threads stay readable (spec 4.4, D-14): replies can be hidden, only the first few
+ * Large threads stay readable: replies can be hidden, only the first few
  * replies of a comment are shown at first, replies from level 6 say whom they answer, and
  * a branch deeper than level 10 opens on its own.
  */

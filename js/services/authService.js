@@ -89,7 +89,7 @@ export class AuthService {
     }
 
     // An unknown username and a wrong password take the same time and give the same
-    // error, so neither reveals which accounts exist (FR-07, SEC-27).
+    // error, so neither reveals which accounts exist.
     const user = await this.#users.findByUsernameKey(usernameKey);
     const result = user
       ? await verifyPassword(password, user.passwordHash)
@@ -108,7 +108,7 @@ export class AuthService {
     return this.#startSession(user);
   }
 
-  /** SEC-28: a locked name is refused before the password is even checked. */
+  /** A locked name is refused before the password is even checked. */
   async #checkLockout(usernameKey) {
     const { lockedUntil } = await this.#attempts.get(usernameKey);
     const waitMs = lockedUntil - this.#now();
@@ -117,7 +117,7 @@ export class AuthService {
     }
   }
 
-  /** SEC-22: a password hashed with older settings is hashed again with the current ones. */
+  /** A password hashed with older settings is hashed again with the current ones. */
   async #rehash(user, password) {
     const { passwordHash, salt } = await hashPassword(password);
     await this.#users.update({ ...user, passwordHash, salt });
@@ -149,7 +149,7 @@ export class AuthService {
     return toPublicUser(user);
   }
 
-  /** Called on page load: the session survives a reload in the same tab (FR-08). */
+  /** Called on page load: the session survives a reload in the same tab. */
   async restoreSession() {
     await this.#sessions.purgeExpired(this.#now());
     return this.getCurrentUser();

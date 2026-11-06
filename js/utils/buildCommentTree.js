@@ -9,9 +9,9 @@ const newestFirst = (a, b) => b.createdAt.localeCompare(a.createdAt);
 const oldestFirst = (a, b) => a.createdAt.localeCompare(b.createdAt);
 
 /**
- * Turns the flat list of comments into a tree (spec 5.3): top-level comments newest first,
+ * Turns the flat list of comments into a tree: top-level comments newest first,
  * replies oldest first. Replies whose parent is missing are never reached, so they are not
- * shown (FR-27). The visited set and the depth limit stop broken data that loops (A → B → A).
+ * shown. The visited set and the depth limit stop broken data that loops (A → B → A).
  * @param {CommentRecord[]} comments
  * @param {number} [maxDepth] Replies deeper than this are left out.
  * @returns {TreeNode[]}

@@ -7,7 +7,7 @@ const findBannedWords = buildMatcher(BANNED_WORDS);
 
 describe('wordMatcher: must be blocked', () => {
   for (const [text, word] of [
-    // Spec §12 table
+    // Plain words, letter case, plurals and nationality forms
     ['I hate war', 'War'],
     ['WAR', 'War'],
     ['wars', 'War'],
@@ -23,7 +23,7 @@ describe('wordMatcher: must be blocked', () => {
     ['Putin', 'Putin'],
     ['p u t i n', 'Putin'],
     ['PUT1N', 'Putin'],
-    // Implementation plan, Step 6
+    // Split, stretched and disguised spellings
     ['Pu tin', 'Putin'],
     ['warrrr', 'War'],
     ['Russsia', 'Russia'],

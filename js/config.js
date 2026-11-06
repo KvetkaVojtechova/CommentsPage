@@ -21,7 +21,7 @@ export const PBKDF2 = Object.freeze({
   hashBytes: 32,
 });
 
-// SEC-28: after 5 failed logins the next try waits 30 s, doubling each time up to 15 min.
+// After 5 failed logins the next try waits 30 s, doubling each time up to 15 min.
 export const LOCKOUT = Object.freeze({
   freeAttempts: 5,
   baseWaitMs: 30_000,
@@ -30,7 +30,7 @@ export const LOCKOUT = Object.freeze({
   maxTrackedNames: 200,
 });
 
-// SEC-29: a session ends after 30 minutes without activity, after 8 hours at most, on logout
+// A session ends after 30 minutes without activity, after 8 hours at most, on logout
 // or when the tab closes. Activity is written at most once a minute.
 export const SESSION = Object.freeze({
   tokenBytes: 32,
@@ -41,17 +41,17 @@ export const SESSION = Object.freeze({
 });
 
 export const MODERATION = Object.freeze({
-  // FR-36: a check that takes longer fails, and the comment is not saved.
+  // A check that takes longer fails, and the comment is not saved.
   timeoutMs: 5_000,
 });
 
 export const UI = Object.freeze({
   locale: 'en-GB',
-  // From this level on, replies stop indenting further (spec 4.4).
+  // From this level on, replies stop indenting further.
   indentCapLevel: 6,
-  // Deeper replies are not drawn; this also stops broken data that loops (spec 5.3).
+  // Deeper replies are not drawn; this also stops broken data that loops.
   maxDepth: 50,
-  // Large threads (D-14): replies shown before "Show N more replies", and the level below
+  // Large threads: replies shown before "Show N more replies", and the level below
   // which a branch opens on its own via "Continue this thread".
   repliesPreview: 3,
   continueThreadAfter: 10,

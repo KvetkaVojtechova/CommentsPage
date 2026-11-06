@@ -1,7 +1,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 
-const HTML_SINK_MESSAGE = 'Build DOM with el() from js/utils/dom.js instead (SEC-01/02).';
+const HTML_SINK_MESSAGE = 'Build DOM with el() from js/utils/dom.js instead.';
 
 export default [
   js.configs.recommended,

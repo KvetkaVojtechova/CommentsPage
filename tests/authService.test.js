@@ -114,7 +114,7 @@ describe('AuthService', () => {
     });
   });
 
-  describe('lockout after failed logins (SEC-28)', () => {
+  describe('lockout after failed logins', () => {
     const wrongLogin = () => auth.login('Anna', 'wrong password!');
     const tooMany = (seconds) => ({ code: 'tooManyAttempts', retryAfterSeconds: seconds });
 
@@ -162,7 +162,7 @@ describe('AuthService', () => {
     });
   });
 
-  it('takes about as long for an unknown user as for a wrong password (SEC-27)', async () => {
+  it('takes about as long for an unknown user as for a wrong password', async () => {
     await auth.register('Anna', PASSWORD, PASSWORD);
     const time = async (username) => {
       const start = performance.now();
@@ -177,7 +177,7 @@ describe('AuthService', () => {
     assert.ok(ratio > 0.5 && ratio < 2, `unknown user took ${ratio.toFixed(2)}× as long`);
   });
 
-  it('re-hashes a password stored with older settings after a successful login (SEC-22)', async () => {
+  it('re-hashes a password stored with older settings after a successful login', async () => {
     const user = await auth.register('Anna', PASSWORD, PASSWORD);
     const old = await hashPassword(PASSWORD, { iterations: 1000 });
     const users = localStore.read(STORAGE_KEYS.users);
@@ -193,7 +193,7 @@ describe('AuthService', () => {
     assert.deepEqual(await auth.login('Anna', PASSWORD), user);
   });
 
-  describe('tamper-resistant sessions (SEC-29)', () => {
+  describe('tamper-resistant sessions', () => {
     const MINUTE = 60_000;
     let user;
 

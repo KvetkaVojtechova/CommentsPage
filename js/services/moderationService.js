@@ -14,8 +14,8 @@ function isValidReply(reply) {
 
 /**
  * Checks a comment for banned words in a Web Worker. Every check starts a new worker
- * (assignment, FR-30) and always stops it afterwards (FR-36). Anything that goes wrong
- * fails closed: the check throws and the comment is not saved (FR-38).
+ * and always stops it afterwards. Anything that goes wrong fails closed: the check throws
+ * and the comment is not saved.
  */
 export class ModerationService {
   #createWorker;
@@ -67,7 +67,7 @@ export class ModerationService {
       };
 
       worker.addEventListener('message', ({ data }) => {
-        // Messages for other requests are ignored (SEC-31).
+        // Messages for other requests are ignored.
         if (data?.requestId !== request.requestId) {
           return;
         }

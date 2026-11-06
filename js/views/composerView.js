@@ -9,7 +9,7 @@ let replyBoxCount = 0;
 
 /**
  * A comment box. Without a parentId it is the box at the top of the page, shown only to
- * logged-in users (FR-11). With a parentId it is an inline reply box with a Cancel button.
+ * logged-in users. With a parentId it is an inline reply box with a Cancel button.
  */
 export class ComposerView {
   #root;
@@ -166,7 +166,7 @@ export class ComposerView {
     }
   }
 
-  // Enter adds a new line; Ctrl+Enter (Cmd+Enter on a Mac) submits (D-5).
+  // Enter adds a new line; Ctrl+Enter (Cmd+Enter on a Mac) submits.
   #onKeydown(event) {
     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
       event.preventDefault();
@@ -182,7 +182,7 @@ export class ComposerView {
     if (this.#submit.disabled) {
       return;
     }
-    // The text is read once, so exactly what was checked is saved (SEC-33).
+    // The text is read once, so exactly what was checked is saved.
     const text = this.#input.value;
 
     this.#busy = true;
@@ -207,8 +207,8 @@ export class ComposerView {
     }
   }
 
-  // Add Comment stays disabled while the text is empty or only whitespace (FR-25), and while
-  // the check runs, so a double click cannot post twice (FR-37).
+  // Add Comment stays disabled while the text is empty or only whitespace, and while
+  // the check runs, so a double click cannot post twice.
   #renderState() {
     const { length } = this.#input.value;
     this.#counter.textContent = MESSAGES.composer.counter(length);
@@ -231,7 +231,7 @@ export class ComposerView {
       : MESSAGES.composer.placeholder;
   }
 
-  // The message disappears as soon as the text is edited (FR-39), see #onInput.
+  // The message disappears as soon as the text is edited, see #onInput.
   #renderError() {
     const error = this.#store.state.ui.errors.get(commentErrorKey(this.#parentId));
     this.#error.textContent = error?.message ?? '';

@@ -46,7 +46,7 @@ describe('CommentService', () => {
     assert.deepEqual(await service.getAll(), [comment]);
   });
 
-  it('refuses a guest, even when called directly (FR-12)', async () => {
+  it('refuses a guest, even when called directly', async () => {
     currentUser = null;
 
     await assert.rejects(service.add({ text: 'Hello' }), PermissionError);

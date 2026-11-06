@@ -2,7 +2,7 @@ import { STORAGE_KEYS } from '../config.js';
 import { parseList, parseSessionRecord, parseTabSession } from './schemas.js';
 
 /**
- * Sessions (SEC-29, D-1, D-2). The tab keeps { userId, token } in sessionStorage, so the session
+ * Sessions. The tab keeps { userId, token } in sessionStorage, so the session
  * ends when the tab closes. localStorage keeps only the SHA-256 of the token with the user id and
  * the times, so editing sessionStorage is not enough to act as someone else, and the times
  * cannot be changed from the tab.

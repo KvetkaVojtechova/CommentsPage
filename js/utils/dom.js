@@ -1,5 +1,5 @@
 /*
- * The only way views create DOM (SEC-01/02): elements via createElement, text via textContent
+ * The only way views create DOM: elements via createElement, text via textContent
  * and attributes from a whitelist. No HTML strings are ever parsed.
  */
 

@@ -1,5 +1,5 @@
 /*
- * 70% wide on large screens (UI-03). Below that, at least 40rem, and on phones the full width
+ * 70% wide on large screens. Below that, at least 40rem, and on phones the full width
  * minus a margin, so comments keep room for their text. Percentages, not vw: vw includes the
  * scrollbar and would cause horizontal scrolling.
  */

@@ -28,7 +28,7 @@ export function normaliseUsername(username) {
     .normalize('NFKC');
 }
 
-/** FR-04: 3–20 characters, letters, digits, _ . and - only. Expects a normalised username. */
+/** 3–20 characters, letters, digits, _ . and - only. Expects a normalised username. */
 export function validateUsername(username) {
   if (typeof username !== 'string' || username.length === 0) {
     return invalid('usernameRequired');
@@ -37,7 +37,7 @@ export function validateUsername(username) {
 }
 
 /**
- * FR-05 / SEC-25: 12–128 characters, any characters allowed, not a common password, not
+ * 12–128 characters, any characters allowed, not a common password, not
  * containing the username, entered twice.
  * @param {string} password
  * @param {string} confirmation
@@ -71,7 +71,7 @@ function checkPasswordRules(password, username) {
 const CHARACTER_KINDS = [/\p{Ll}/u, /\p{Lu}/u, /\p{N}/u, /[^\p{L}\p{N}]/u];
 
 /**
- * A rough strength estimate for the hint under the password field (SEC-25). Length counts
+ * A rough strength estimate for the hint under the password field. Length counts
  * most; a mix of character kinds helps a little. It never adds rules beyond validatePassword.
  * @returns {{ level: 'weak' | 'fair' | 'good' | 'strong', code: string | null }}
  *   `code` says why a password is weak, e.g. "passwordTooCommon".
@@ -96,14 +96,14 @@ export function toUsernameKey(username) {
   return normaliseUsername(username).toLowerCase();
 }
 
-/** Removes control characters (SEC-06) and surrounding whitespace. */
+/** Removes control characters and surrounding whitespace. */
 export function normaliseCommentText(text) {
   return String(text ?? '')
     .replace(CONTROL_CHARACTERS, '')
     .trim();
 }
 
-/** FR-25: 1–500 characters after trimming. Expects normalised text. */
+/** 1–500 characters after trimming. Expects normalised text. */
 export function validateCommentText(text) {
   if (typeof text !== 'string' || text.length < LIMITS.comment.min) {
     return invalid('commentEmpty');

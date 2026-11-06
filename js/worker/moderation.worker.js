@@ -1,6 +1,6 @@
 /*
- * Checks one comment for banned words (FR-30 to FR-38). The page starts a new worker for
- * every check and stops it after the answer. Messages have a fixed shape (SEC-31):
+ * Checks one comment for banned words. The page starts a new worker for
+ * every check and stops it after the answer. Messages have a fixed shape:
  *   in:  { type: 'check', requestId, text }
  *   out: { type: 'result', requestId, blocked, words } or { type: 'error', requestId, reason }
  */
@@ -19,7 +19,7 @@ function isCheckRequest(data) {
   );
 }
 
-/** SEC-32: an array of 1–100 non-empty strings. */
+/** An array of 1–100 non-empty strings. */
 function isWordList(value) {
   return (
     Array.isArray(value) &&

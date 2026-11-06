@@ -1,4 +1,4 @@
-/* Buttons: colours swap on hover and keyboard focus (UI-05, UI-06) */
+/* Buttons: colours swap on hover and keyboard focus */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -365,7 +365,7 @@
   font-size: 0.85rem;
 }
 
-/* The banned-word message: #FF8300 text with a warning icon (UI-07) */
+/* The banned-word message: #FF8300 text with a warning icon */
 .composer__error--blocked {
   display: flex;
   align-items: center;
@@ -501,7 +501,7 @@
 }
 
 /*
- * Replies: each level is indented up to the cap (spec 4.4, D-6). Thread lines run down from
+ * Replies: each level is indented up to the cap. Thread lines run down from
  * a comment's avatar and curve into each reply's avatar, ending at the last reply. They are
  * drawn with pseudo-elements, so they are decorative only and invisible to screen readers.
  */

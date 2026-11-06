@@ -1,5 +1,5 @@
 /*
- * Password hashing with PBKDF2-HMAC-SHA-256 from the Web Crypto API (SEC-20 to SEC-24).
+ * Password hashing with PBKDF2-HMAC-SHA-256 from the Web Crypto API.
  * Stored format: pbkdf2-sha256$<iterations>$<saltHex>$<hashHex>
  */
 import { PBKDF2 } from '../config.js';
@@ -76,7 +76,7 @@ export async function hashPassword(password, { iterations = PBKDF2.iterations } 
   return { passwordHash: [PBKDF2.algorithm, iterations, salt, hash].join('$'), salt };
 }
 
-// A hash no password matches, used to spend the same time on an unknown username (SEC-27).
+// A hash no password matches, used to spend the same time on an unknown username.
 const DUMMY_HASH = [PBKDF2.algorithm, PBKDF2.iterations, '0'.repeat(32), '0'.repeat(64)].join('$');
 
 /** Does the same work as verifyPassword and always fails. */
@@ -87,7 +87,7 @@ export async function dummyVerify(password) {
 
 /**
  * @returns {Promise<{ ok: boolean, needsRehash: boolean }>} `needsRehash` is true when the
- *   password is correct but was hashed with older settings (SEC-22).
+ *   password is correct but was hashed with older settings.
  */
 export async function verifyPassword(password, storedHash) {
   const stored = parseStoredHash(storedHash);

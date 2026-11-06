@@ -5,7 +5,7 @@ import { fullDateTime, relativeTime } from '../utils/formatTime.js';
 /**
  * One comment: avatar, author, a "You" label on the user's own comments, the time, for deep
  * replies the name it answers, the text, and an actions row (Reply for logged-in users).
- * All stored values are inserted as text only, so a comment can never run code (SEC-01).
+ * All stored values are inserted as text only, so a comment can never run code.
  * @param {{ authorId: string, authorName: string, text: string, createdAt: string }} comment
  * @param {{ id: string } | null} currentUser
  * @param {{ onReply: () => void, replyingTo?: string | null, now?: Date }} options

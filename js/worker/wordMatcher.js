@@ -1,7 +1,7 @@
 /*
- * Finds banned words "in any form" (FR-32) without blocking ordinary words (FR-33).
+ * Finds banned words "in any form" without blocking ordinary words.
  * Pure functions without DOM access, so they run in the worker and in Node tests.
- * The text goes through four stages (technical design §7):
+ * The text goes through four stages (see docs/technical-design.md):
  *   normalise → split into tokens → build candidates → match against every form of each word.
  * Matching is always exact on a whole candidate, never a search inside a word, so "software",
  * "award" or "Edward" can never match "war".
@@ -98,7 +98,7 @@ function hasTripleLetter(text) {
   return /(.)\1\1/u.test(text);
 }
 
-/** The accepted forms of one banned word (technical design §7.1). */
+/** The accepted forms of one banned word. */
 function formsOf(base) {
   const forms = [base, `${base}s`, ...GENERIC_ENDINGS.map((ending) => base + ending)];
   if (PLURAL_ES_ENDINGS.test(base)) {

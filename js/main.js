@@ -124,7 +124,7 @@ async function start() {
 }
 
 /**
- * Keeps the session in step (SEC-29): activity keeps it alive, a check every minute ends it
+ * Keeps the session in step: activity keeps it alive, a check every minute ends it
  * after 30 idle minutes, and a logout or change in another tab is noticed straight away.
  */
 function watchSession(authController, localStore) {

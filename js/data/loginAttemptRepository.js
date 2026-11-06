@@ -4,7 +4,7 @@ import { parseList, parseLoginAttempt } from './schemas.js';
 const NO_ATTEMPTS = Object.freeze({ failures: 0, lockLevel: 0, lockedUntil: 0 });
 
 /**
- * Failed logins per username (SEC-28, D-3), in localStorage. Unknown usernames are counted
+ * Failed logins per username, in localStorage. Unknown usernames are counted
  * too, so the counter does not reveal which accounts exist. Stored as a list of records,
  * so a username like "__proto__" is only ever a value, never an object key.
  */
