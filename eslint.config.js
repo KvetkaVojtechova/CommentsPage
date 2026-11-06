@@ -74,6 +74,11 @@ export default [
   },
   {
     files: ['tests/**/*.js', 'eslint.config.js'],
+    ignores: ['tests/perf.js'],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['tests/perf.js'],
+    languageOptions: { globals: globals.browser },
   },
 ];
